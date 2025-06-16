@@ -1,12 +1,11 @@
 // tailwind.config.js
-module.exports = {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {},
   },
-  plugins: [require('@tailwindcss/line-clamp'),require('daisyui')],
-
-}
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["light"], // 항상 라이트 테마만 사용
+  },
+};
