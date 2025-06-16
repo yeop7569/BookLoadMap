@@ -11,8 +11,7 @@ export default function Footer() {
         <nav className="flex flex-col gap-2">
           <h6 className="footer-title">Links</h6>
           <a className="link link-hover">홈</a>
-          <a className="link link-hover">로드맵</a>
-          <a className="link link-hover">로그인</a>
+         
           <a className="link link-hover">문의</a>
         </nav>
       </div>

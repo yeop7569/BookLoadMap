@@ -8,25 +8,25 @@ import 'swiper/css/autoplay';
       id: 1,
       title: '모던 자바스크립트',
       description: 'JavaScript 입문자를 위한 완벽 가이드',
-      image: 'https://placehold.co/300x200',
+      image: 'https://placehold.co/400x300',
     },
     {
       id: 2,
       title: '리액트 완전 정복',
       description: 'React로 만드는 프론트엔드 실전 프로젝트',
-      image: 'https://placehold.co/300x200',
+      image: 'https://placehold.co/400x300',
     },
     {
       id: 3,
       title: '웹 성능 최적화',
       description: '사용자 경험을 향상시키는 퍼포먼스 전략',
-      image: 'https://placehold.co/300x200',
+      image: 'https://placehold.co/400x300',
     },
      {
       id: 4,
       title: '배포 잘하기',
       description: '사용자 경험을 향상시키는 퍼포먼스 전략',
-      image: 'https://placehold.co/300x200',
+      image: 'https://placehold.co/400x300',
     },
   ];
 export default function MainPage() {
