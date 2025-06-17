@@ -3,6 +3,8 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/autoplay';
+import { Link } from 'react-router-dom';
+
  const books = [
     {
       id: 1,
@@ -38,7 +40,9 @@ export default function MainPage() {
           <div className="max-w-2xl">
             <h1 className="text-4xl font-bold">당신만을 위한 도서 로드맵 📚</h1>
             <p className="py-4 text-lg">관심 분야에 맞는 책을 추천하고, 읽은 책을 기반으로 다음 단계를 안내합니다.</p>
-            <button className="btn btn-primary">지금 시작하기</button>
+            <Link to="/detail">
+              <button className="btn btn-primary">지금 시작하기</button>
+            </Link>
           </div>
         </div>
       </section>
