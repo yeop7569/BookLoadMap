@@ -13,8 +13,10 @@ function App() {
       <Routes>
         <Route path="/" element={<MainPage />} />
         <Route path="/detail" element={<DetailPage />} />
+          <Route path="*" element={ <div>없는페이지임</div> } />
       </Routes>
       <Footer />
+    
     </Router>
   );
 }
