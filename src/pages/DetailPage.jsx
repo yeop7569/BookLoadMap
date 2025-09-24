@@ -20,9 +20,7 @@ export default function DetailPage() {
     setError('');
     try {
       const res = await fetch(
-        `https://dapi.kakao.com/v3/search/book?target=title&query=${encodeURIComponent(
-          searchText
-        )}`,
+        `https://dapi.kakao.com/v3/search/book?target=title&query=${encodeURIComponent(searchText)}`,
         {
           headers: {
             Authorization: `KakaoAK ${import.meta.env.VITE_KAKAO_API_KEY}`,
@@ -43,7 +41,7 @@ export default function DetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-16">
-      {/* 상단: 검색 + 뷰 토글 */}
+      {/* 상단: 검색 + 뷰 토글 + 작성하기 버튼 */}
       <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
           <input
@@ -53,7 +51,6 @@ export default function DetailPage() {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchBooks()}
-            aria-label="검색"
           />
           <FaSearch className="absolute left-3 top-3 text-gray-400" />
           <button
@@ -64,24 +61,22 @@ export default function DetailPage() {
           </button>
         </div>
 
+        {/* 작성하기 버튼 */}
+        <Link to="/write">
+          <button className="btn btn-primary  text-white-400">작성하기</button>
+        </Link>
+
+        {/* 뷰 토글 */}
         <div className="flex space-x-2">
           <button
             onClick={() => setIsGridView(true)}
-            className={`p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isGridView ? 'bg-blue-500 text-white' : 'bg-gray-200'
-            }`}
-            aria-label="Grid view"
-            title="그리드 보기"
+            className={`p-2 rounded-lg ${isGridView ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <FaTh />
           </button>
           <button
             onClick={() => setIsGridView(false)}
-            className={`p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              !isGridView ? 'bg-blue-500 text-white' : 'bg-gray-200'
-            }`}
-            aria-label="List view"
-            title="리스트 보기"
+            className={`p-2 rounded-lg ${!isGridView ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <FaList />
           </button>
@@ -89,12 +84,8 @@ export default function DetailPage() {
       </div>
 
       {/* 상태 표시 */}
-      {loading && (
-        <div className="text-center py-10 text-gray-500">불러오는 중...</div>
-      )}
-      {error && (
-        <div className="text-center py-4 text-red-500">{error}</div>
-      )}
+      {loading && <div className="text-center py-10 text-gray-500">불러오는 중...</div>}
+      {error && <div className="text-center py-4 text-red-500">{error}</div>}
 
       {/* 결과 영역 */}
       {!loading && !error && (
@@ -106,11 +97,7 @@ export default function DetailPage() {
               </p>
             </div>
           ) : (
-            <div
-              className={`grid gap-6 ${
-                isGridView ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
-              }`}
-            >
+            <div className={`grid gap-6 ${isGridView ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
               {books.map((b) => {
                 const key = `${b.isbn}_${b.datetime || b.title}`;
                 return (
@@ -125,9 +112,7 @@ export default function DetailPage() {
                       className="w-40 sm:w-32 aspect-[2/3] object-cover rounded-t mb-4"
                     />
                     <div className="p-4 w-full">
-                      <h2 className="text-lg font-bold text-gray-900 line-clamp-2">
-                        {b.title}
-                      </h2>
+                      <h2 className="text-lg font-bold text-gray-900 line-clamp-2">{b.title}</h2>
                       <p className="text-sm text-gray-700 mt-1">
                         {Array.isArray(b.authors) && b.authors.length > 0
                           ? b.authors.join(', ')
