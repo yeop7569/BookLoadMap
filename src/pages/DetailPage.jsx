@@ -63,7 +63,7 @@ export default function DetailPage() {
 
         {/* 작성하기 버튼 */}
         <Link to="/write">
-          <button className="btn btn-primary  text-white-400">작성하기</button>
+          <button className="btn btn-primary  text-white-400">나만의 도서 루트 만들기</button>
         </Link>
 
         {/* 뷰 토글 */}

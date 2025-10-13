@@ -1,7 +1,66 @@
 import React, { useState } from "react";
+import { create } from 'zustand'; // Zustand 라이브러리 임포트
 
-// Modal 컴포넌트를 분리하여 가독성을 높일 수 있지만, 여기서는 간단히 같은 파일에 구현합니다.
-function SelectedBooksModal({ selectedBooks, removeBook, closeModal, saveDraft }) {
+// ----------------------------------------------------
+// 1. ZUSTAND STORE 정의 (useBookStore)
+// 선택된 책 목록 및 모달 상태를 관리합니다.
+// ----------------------------------------------------
+const useBookStore = create((set) => ({
+  // 상태 (State)
+  selectedBooks: [], // 선택된 책 목록 (note 필드 포함)
+  isModalOpen: false,  // 모달 표시 여부
+
+  // 액션 (Actions) - 상태 변경 함수
+
+  // 책을 선택 목록에 추가 (중복 방지)
+  addBook: (book) => set((state) => {
+    const key = book.isbn || book.title;
+    const isAlreadySelected = state.selectedBooks.some(b => (b.isbn || b.title) === key);
+
+    if (isAlreadySelected) {
+      return state;
+    }
+
+    // 새로운 책을 추가하고 note 필드를 초기화
+    return { 
+      selectedBooks: [...state.selectedBooks, { ...book, note: "" }] 
+    };
+  }),
+
+  // 책을 선택 목록에서 제거
+  removeBook: (bookToRemove) => set((state) => {
+    const key = bookToRemove.isbn || bookToRemove.title;
+    return {
+      selectedBooks: state.selectedBooks.filter(b => (b.isbn || b.title) !== key)
+    };
+  }),
+
+  // 특정 책의 후기(Note)를 업데이트
+  updateBookNote: (bookKey, newNote) => set((state) => ({
+    selectedBooks: state.selectedBooks.map(book => {
+      const key = book.isbn || book.title;
+      if (key === bookKey) {
+        // 불변성을 지켜 note만 업데이트
+        return { ...book, note: newNote }; 
+      }
+      return book;
+    }),
+  })),
+
+  // 모달 열기/닫기
+  openModal: () => set({ isModalOpen: true }),
+  closeModal: () => set({ isModalOpen: false }),
+
+  // 목록 전체 초기화 (예: 저장 후)
+  clearSelection: () => set({ selectedBooks: [], isModalOpen: false }),
+}));
+
+
+// ----------------------------------------------------
+// 2. MODAL 컴포넌트
+// props로 받은 Zustand 액션을 사용하도록 수정되었습니다.
+// ----------------------------------------------------
+function SelectedBooksModal({ selectedBooks, removeBook, closeModal, saveDraft, updateBookNote }) {
   if (selectedBooks.length === 0) return null;
 
   return (
@@ -9,31 +68,35 @@ function SelectedBooksModal({ selectedBooks, removeBook, closeModal, saveDraft }
     <div className="modal modal-open">
       <div className="modal-box max-w-2xl">
         <h3 className="font-bold text-lg">선택된 도서 목록</h3>
-        <p className="py-4">선택하신 책들에 대한 후기를 작성하거나 초안으로 저장할 수 있습니다.</p>
+        <p className="py-4">책들의 후기를 작성해주세요</p>
 
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-          {selectedBooks.map((book) => (
-            <div key={book.isbn || book.title} className="flex items-center border p-3 rounded-lg shadow-sm">
-              <img src={book.thumbnail || "https://placehold.co/80x120?text=No+Image"} alt={book.title} className="w-16 h-24 object-cover mr-4 flex-shrink-0" />
-              <div className="flex-grow">
-                <h4 className="font-semibold text-base">{book.title}</h4>
-                <p className="text-sm text-gray-600 truncate">저자: {book.authors.join(', ')}</p>
-                {/* 각 책마다 후기(note) 필드를 추가 */}
-                <textarea
-                  className="w-full border rounded p-1 text-sm mt-2"
-                  placeholder="이 책에 대한 후기 작성"
-                  value={book.note || ""}
-                  onChange={(e) => book.onNoteChange(e.target.value, book)} // onNoteChange는 부모 컴포넌트에서 전달
-                />
+          {selectedBooks.map((book) => {
+            const bookKey = book.isbn || book.title; // Zustand 액션 호출을 위한 고유 키
+            return (
+              <div key={bookKey} className="flex items-center border p-3 rounded-lg shadow-sm">
+                <img src={book.thumbnail || "https://placehold.co/80x120?text=No+Image"} alt={book.title} className="w-16 h-24 object-cover mr-4 flex-shrink-0" />
+                <div className="flex-grow">
+                  <h4 className="font-semibold text-base">{book.title}</h4>
+                  <p className="text-sm text-gray-600 truncate">저자: {book.authors.join(', ')}</p>
+                  
+                  <textarea
+                    className="w-full border rounded p-1 text-sm mt-2"
+                    placeholder="이 책에 대한 후기 작성"
+                    value={book.note || ""}
+                    // **[변경]** props로 받은 updateBookNote 액션 함수를 직접 호출
+                    onChange={(e) => updateBookNote(bookKey, e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => removeBook(book)} // props로 받은 removeBook 액션 호출
+                  className="btn btn-sm btn-error ml-4 flex-shrink-0"
+                >
+                  제외
+                </button>
               </div>
-              <button
-                onClick={() => removeBook(book)}
-                className="btn btn-sm btn-error ml-4 flex-shrink-0"
-              >
-                제외
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="modal-action">
@@ -50,18 +113,32 @@ function SelectedBooksModal({ selectedBooks, removeBook, closeModal, saveDraft }
 }
 
 
+// ----------------------------------------------------
+// 3. MAIN 컴포넌트 (WritePage)
+// Zustand Hook을 사용하여 상태를 가져옵니다.
+// ----------------------------------------------------
 export default function WritePage() {
+  // 로컬 상태 (검색 관련 상태는 여전히 로컬에 유지)
   const [searchText, setSearchText] = useState("");
   const [books, setBooks] = useState([]);
-  // 단일 객체 대신 여러 책을 담을 배열로 변경
-  const [selectedBooks, setSelectedBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  // 모달 표시 상태 추가
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // **[변경]** Zustand에서 전역 상태와 액션 함수를 가져옵니다.
+  const { 
+    selectedBooks, 
+    isModalOpen, 
+    addBook, 
+    removeBook, 
+    updateBookNote,
+    openModal, 
+    closeModal 
+  } = useBookStore(); 
+
 
   const searchBooks = async () => {
+    // ... (검색 로직은 변경 없음)
     if (!searchText.trim()) {
-        setBooks([]); // 검색어가 없으면 결과를 비웁니다.
+        setBooks([]); 
         return;
     }
     setLoading(true);
@@ -70,13 +147,11 @@ export default function WritePage() {
         `https://dapi.kakao.com/v3/search/book?target=title&query=${encodeURIComponent(searchText)}`,
         {
           headers: {
-            // 환경 변수 사용
             Authorization: `KakaoAK ${import.meta.env.VITE_KAKAO_API_KEY}`,
           },
         }
       );
       const data = await res.json();
-      // 검색 결과로 가져온 책에 note 필드가 없으므로 추가하지 않습니다.
       setBooks(data.documents || []);
     } catch (e) {
       console.error(e);
@@ -87,44 +162,18 @@ export default function WritePage() {
 
   const thumb = (url) => url || "https://placehold.co/400x400?text=No+Image";
 
-  // 책 선택 핸들러: 선택된 목록에 추가 (이미 있으면 추가하지 않음)
+  // 책 선택 핸들러: **[변경]** Zustand의 addBook 액션 사용
   const selectBook = (book) => {
-    // 이미 선택된 책인지 확인 (ISBN을 고유 식별자로 사용, 없으면 title)
-    const key = book.isbn || book.title;
-    const isAlreadySelected = selectedBooks.some(b => (b.isbn || b.title) === key);
-
-    if (!isAlreadySelected) {
-      // 새로운 책을 추가할 때 후기(note) 필드도 초기화하여 추가
-      setSelectedBooks([...selectedBooks, { ...book, note: "" }]);
-    }
-    // 선택 후 바로 모달을 열어줄 수도 있습니다.
-    setIsModalOpen(true);
+    addBook(book); // Zustand 액션으로 selectedBooks 상태 변경
+    openModal();   // Zustand 액션으로 isModalOpen 상태 변경
   };
   
-  // 선택된 책 제거 핸들러
-  const removeBook = (bookToRemove) => {
-    const key = bookToRemove.isbn || bookToRemove.title;
-    setSelectedBooks(selectedBooks.filter(b => (b.isbn || b.title) !== key));
-  };
-  
-  // 모달 내에서 개별 책의 후기(note)를 업데이트하는 핸들러
-  const updateBookNote = (newNote, bookToUpdate) => {
-      const key = bookToUpdate.isbn || bookToUpdate.title;
-      setSelectedBooks(selectedBooks.map(book => {
-          if ((book.isbn || book.title) === key) {
-              return { ...book, note: newNote };
-          }
-          return book;
-      }));
-  };
-
-  // 임시 저장 함수 (실제 서버 통신 로직을 여기에 구현)
+  // 임시 저장 함수
   const handleSaveDraft = () => {
       console.log("저장할 도서 목록:", selectedBooks);
       // TODO: 서버 API로 selectedBooks 데이터를 전송하는 로직 구현
       alert(`총 ${selectedBooks.length}권의 책 후기를 초안으로 저장했습니다!`);
-      setIsModalOpen(false); // 저장 후 모달 닫기
-      // setSelectedBooks([]); // 필요하다면 저장 후 선택 목록 초기화
+      closeModal(); // Zustand 액션으로 모달 닫기
   };
 
 
@@ -150,7 +199,10 @@ export default function WritePage() {
       {/* 선택된 책 모달 열기 버튼 */}
       {selectedBooks.length > 0 && (
           <div className="text-right mb-4">
-              <button onClick={() => setIsModalOpen(true)} className="btn btn-warning">
+              <button 
+                onClick={openModal} // **[변경]** Zustand 액션 사용
+                className="btn btn-warning"
+              >
                   선택한 책 ({selectedBooks.length}권) 확인 및 후기 작성
               </button>
           </div>
@@ -168,7 +220,7 @@ export default function WritePage() {
                   <button
                     onClick={() => selectBook(b)}
                     className={`btn btn-sm mt-2 ${isSelected ? 'btn-disabled' : 'btn-accent'}`}
-                    disabled={isSelected} // 이미 선택했으면 비활성화
+                    disabled={isSelected} 
                   >
                     {isSelected ? '선택됨' : '선택'}
                   </button>
@@ -178,15 +230,12 @@ export default function WritePage() {
       </div>
 
       {/* 선택된 책 모달 */}
-      {isModalOpen && (
+      {isModalOpen && ( // **[변경]** isModalOpen 상태를 Zustand에서 가져옴
           <SelectedBooksModal 
-              selectedBooks={selectedBooks.map(book => ({
-                ...book,
-                // 모달 컴포넌트 내에서 note를 수정할 수 있도록 콜백 함수를 각 책 객체에 추가합니다.
-                onNoteChange: updateBookNote
-              }))}
-              removeBook={removeBook}
-              closeModal={() => setIsModalOpen(false)}
+              selectedBooks={selectedBooks} // **[변경]** Zustand 상태를 직접 props로 전달
+              removeBook={removeBook} // **[변경]** Zustand 액션을 직접 props로 전달
+              updateBookNote={updateBookNote} // **[변경]** Zustand 액션을 직접 props로 전달
+              closeModal={closeModal} // **[변경]** Zustand 액션을 직접 props로 전달
               saveDraft={handleSaveDraft}
           />
       )}
