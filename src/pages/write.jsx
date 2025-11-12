@@ -304,7 +304,6 @@ export default function WritePage() {
     }
     setLoading(true);
 
-    // ⚠️ 수정: import.meta.env 오류를 피하기 위해 일반 상수로 변경
     const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a";
     if (KAKAO_API_KEY === "6e083fc4445086456e1165ef9b58ef6a") {
       console.error(
