@@ -1,11 +1,9 @@
-// src/pages/MyPage.jsx (수정)
-
-import React from "react";
+import { BiArrowToLeft } from "react-icons/bi";
 import { useAuthStore } from "../store/authStore"; // 👈 Zustand Store 임포트
-
-const MyPage = () => {
+export default MyPage;
+function MyPage() {
   // 💡 [핵심] 로컬 상태 대신 전역 상태만 구독합니다.
-  const { isLoggedIn, login, user } = useAuthStore();
+  const { isLoggedIn, login } = useAuthStore();
 
   // 1. 로그인되지 않은 경우
   if (!isLoggedIn) {
@@ -27,19 +25,11 @@ const MyPage = () => {
 
   // 2. 로그인된 경우 (user 객체는 store에서 가져온 실제 사용자 정보)
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">
-        {user.email} 님의 마이페이지 👋
-      </h1>
-      <section className="bg-white p-6 rounded-lg shadow-xl">
-        <h2 className="text-xl font-semibold mb-4 text-blue-600">
-          내 커리큘럼 관리
-        </h2>
-        {/* 여기에 마이페이지의 핵심 로직 (커리큘럼 CRUD)을 구현합니다. */}
-        <p>사용자 전용 데이터 및 커리큘럼 편집 화면이 여기에 표시됩니다.</p>
-      </section>
-    </div>
+    <main className="w-full h-full flex gap- 6">
+      <div className="fixed right-1/2 bottom-10 translate-x-1/2 z-20 flex items-center gap-2">
+        <button>수정</button>
+        <button>저장</button>
+      </div>
+    </main>
   );
-};
-
-export default MyPage;
+}

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { signInAnonymously, signOut, onAuthStateChange } from "./supabase";
-
-// 분리된 모듈 import
 import useBookStore from "../store/useBookStore";
 import {
   searchBooksAPI,
@@ -208,7 +206,6 @@ export default function WritePage() {
         })}
       </div>
 
-      {/* 모달 */}
       {isModalOpen && (
         <SelectedBooksModal
           selectedBooks={selectedBooks}

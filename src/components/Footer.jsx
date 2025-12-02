@@ -1,20 +1,28 @@
-import React from 'react';
-
-export default function Footer() {
+function Footer() {
   return (
-    <footer className="w-full bg-base-200 text-base-content py-6 px-8 fixed bottom-0 left-0">
-      <div className="max-w-7xl mx-auto flex justify-between">
-        <aside className="flex flex-col gap-2">
-          <p className="text-lg font-bold">BookLoadMap</p>
-          <p>당신의 책 추천 로드맵<br />© 2025 BookLoadMap. All rights reserved.</p>
-        </aside>
-        <nav className="flex flex-col gap-2">
-          <h6 className="footer-title">Links</h6>
-          <a className="link link-hover">홈</a>
-         
-          <a className="link link-hover">문의</a>
-        </nav>
+    <footer className="w-full border-t mt-10">
+      <div className="w-full flex justify-between items-start p-6">
+        {/* Left */}
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-semibold">BookRoadmap</h2>
+          <p className="text-sm text-gray-500">맞춤 독서 커리큘럼 플랫폼</p>
+        </div>
+
+        {/* Right */}
+        <div className="flex items-center gap-4">
+          <p className="cursor-pointer transition-all duration-200 hover:font-medium">
+            이용약관
+          </p>
+          <p className="cursor-pointer transition-all duration-200 hover:font-medium">
+            개인정보처리방침
+          </p>
+          <p className="cursor-pointer transition-all duration-200 hover:font-medium">
+            도서 정보 문의
+          </p>
+        </div>
       </div>
     </footer>
   );
 }
+
+export default Footer;
