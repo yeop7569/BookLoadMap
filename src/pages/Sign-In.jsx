@@ -1,83 +1,105 @@
 import { useState, useEffect } from "react";
-import PasswordInput from "../components/PassWordInput";
+// PasswordInput 컴포넌트가 '../components/PassWordInput'에 있다고 가정
+// 실제 코드에서는 import { useState, useEffect } from "react"; 아래에 위치해야 합니다.
 
-// --- 유효성 검사 함수 ---
-
-// 이메일 유효성 검사 (결과를 직접 반환)
+// --- 유효성 검사 함수 (변경 없음) ---
 const isValidEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
 
-// 비밀번호 유효성 검사 (최소 길이 8자)
 const isValidPassword = (password) => {
   return password.length >= 8;
 };
 
-// ----------------------
+// Toast 상태 관리와 비밀번호 입력 필드 상태를 통합하기 위해 컴포넌트 내부에서 상태를 선언합니다.
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
-
   const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [remember, setRemember] = useState(false);
 
+  const [errors, setErrors] = useState({ email: "", password: "" }); // 에러 상태를 객체로 통합
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null); // Toast 상태 추가
 
-  // 이메일 입력 핸들러: 실시간으로 에러 메시지 업데이트
-  const handleEmailChange = (value) => {
-    setEmail(value);
-    if (value.length > 0 && !isValidEmail(value)) {
-      setEmailError("올바른 이메일 형식이 아닙니다.");
-    } else {
-      setEmailError("");
+  // --- 1. Toast 메시지 자동 숨김 효과 (UX 개선) ---
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3000); // 3초 후 토스트 메시지 제거
+      return () => clearTimeout(timer);
     }
+  }, [toast]);
+
+  // --- 2. 입력 필드 변경 핸들러 (값만 업데이트) ---
+  const handleFieldChange = (field, value) => {
+    if (field === "email") setEmail(value);
+    if (field === "password") setPassword(value);
+
+    // 사용자가 입력하면 기존 에러 메시지 초기화 (UX 개선)
+    setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // 비밀번호 입력 핸들러: 실시간으로 에러 메시지 업데이트
-  const handlePasswordChange = (value) => {
-    setPassword(value);
-    if (value.length > 0 && !isValidPassword(value)) {
-      setPasswordError("비밀번호는 최소 8자 이상이어야 합니다.");
-    } else {
-      setPasswordError("");
+  // --- 3. onBlur 시 유효성 검사 핸들러 (UX 개선) ---
+  const handleBlurValidation = (field, value) => {
+    let errorMsg = "";
+
+    if (value.length === 0) {
+      // 비어있는 경우 onBlur 시에는 에러 표시하지 않음 (onSubmit에서 처리)
+      errorMsg = "";
+    } else if (field === "email" && !isValidEmail(value)) {
+      errorMsg = "올바른 이메일 형식이 아닙니다.";
+    } else if (field === "password" && !isValidPassword(value)) {
+      errorMsg = "비밀번호는 최소 8자 이상이어야 합니다.";
     }
+
+    setErrors((prev) => ({ ...prev, [field]: errorMsg }));
   };
 
+  // --- 4. 로그인 제출 핸들러 (최종 검사) ---
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 1. 제출 시 최종 유효성 검사 및 에러 메시지 강제 설정
-    const isEmailValid = isValidEmail(email);
-    const isPasswordValid = isValidPassword(password);
+    // 4-1. 제출 시 최종 유효성 검사 및 에러 메시지 강제 설정
+    let newErrors = { email: "", password: "" };
 
-    if (!isEmailValid) {
-      setEmailError("올바른 이메일 형식이 아닙니다.");
+    if (!email) {
+      newErrors.email = "이메일을 입력해주세요.";
+    } else if (!isValidEmail(email)) {
+      newErrors.email = "올바른 이메일 형식이 아닙니다.";
     }
 
-    if (!isPasswordValid) {
-      setPasswordError("비밀번호는 최소 8자 이상이어야 합니다.");
+    if (!password) {
+      newErrors.password = "비밀번호를 입력해주세요.";
+    } else if (!isValidPassword(password)) {
+      newErrors.password = "비밀번호는 최소 8자 이상이어야 합니다.";
     }
 
-    // 2. 모든 필드가 유효한지 확인
-    if (!email || !password || !isEmailValid || !isPasswordValid) {
+    setErrors(newErrors);
+
+    // 4-2. 유효성 검사 통과 여부 확인
+    const hasErrors = newErrors.email || newErrors.password;
+
+    if (hasErrors) {
       setToast({ message: "입력한 정보를 확인해주세요.", type: "error" });
       return;
     }
 
     setLoading(true);
+    setToast(null); // 로딩 시작 시 토스트 메시지 숨김
 
-    // 3. 실제 서버 통신 모킹 (try/catch 구조 유지)
+    // 4-3. 실제 서버 통신 모킹
     try {
-      // await api.post('/login', { email, password, remember }); // 실제 통신 코드
-
+      // await api.post('/login', { email, password, remember });
       await new Promise((resolve) => setTimeout(resolve, 1500)); // 모킹 시간 1.5초
 
-      setToast({ message: "로그인 성공!", type: "success" });
+      // 성공 시
+      setToast({ message: "로그인 성공! 환영합니다.", type: "success" });
+      // navigate('/dashboard'); // 페이지 이동 로직
     } catch (error) {
-      // 실제 API 에러 처리 로직
+      // 서버 에러 처리 (예: 401 Unauthorized)
       setToast({
         message: "로그인 실패. 이메일 또는 비밀번호를 확인해주세요.",
         type: "error",
@@ -90,11 +112,11 @@ export default function SignIn() {
   return (
     <main className="w-full h-full min-h-[720px] flex justify-center items-center p-6">
       <div className="w-full max-w-md border rounded-xl shadow p-8 flex flex-col gap-6 bg-base-100">
-         
         <div className="flex flex-col gap-1">
-          <h4 className="text-2xl font-semibold">로그인</h4>
+          <h4 className="text-2xl font-semibold">로그인 🔒</h4>
           <p className="text-sm text-gray-500">계속하려면 로그인하세요</p>
         </div>
+
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           {/* 이메일 입력 필드 */}
           <label className="form-control w-full">
@@ -106,27 +128,41 @@ export default function SignIn() {
               type="email"
               placeholder="이메일을 입력하세요"
               className={`input input-bordered w-full ${
-                emailError ? "input-error" : ""
+                errors.email ? "input-error" : ""
               }`}
               value={email}
-              onChange={(e) => handleEmailChange(e.target.value)}
-              disabled={loading} // 로딩 중 비활성화
+              onChange={(e) => handleFieldChange("email", e.target.value)}
+              onBlur={(e) => handleBlurValidation("email", e.target.value)} // onBlur 검사 추가
+              disabled={loading}
             />
 
-            {emailError && (
-              <p className="text-red-500 text-sm mt-1">{emailError}</p>
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
             )}
           </label>
 
           {/* 비밀번호 입력 컴포넌트 */}
-          <PasswordInput
-            value={password}
-            onChange={handlePasswordChange}
-            error={!!passwordError} // PasswordInput에 에러 유무 전달
-            disabled={loading} // 로딩 중 비활성화
-          />
-          {passwordError && (
-            <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+          {/* 실제 PasswordInput 컴포넌트가 handlePasswordChange와 onBlur 로직을 내부에서 처리하도록 수정 필요 */}
+          <label className="form-control w-full">
+            <div className="label">
+              <span className="label-text font-medium">비밀번호</span>
+            </div>
+            {/* PasswordInput 컴포넌트가 PasswordInput.jsx 파일에 있다고 가정 */}
+            <input
+              type="password"
+              placeholder="비밀번호를 입력하세요"
+              className={`input input-bordered w-full ${
+                errors.password ? "input-error" : ""
+              }`}
+              value={password}
+              onChange={(e) => handleFieldChange("password", e.target.value)}
+              onBlur={(e) => handleBlurValidation("password", e.target.value)} // onBlur 검사 추가
+              disabled={loading}
+            />
+          </label>
+
+          {errors.password && (
+            <p className="text-red-500 text-sm mt-1">{errors.password}</p>
           )}
 
           {/* 로그인 상태 유지 체크박스 */}
@@ -136,7 +172,7 @@ export default function SignIn() {
               className="checkbox"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              disabled={loading} // 로딩 중 비활성화
+              disabled={loading}
             />
             <span className="text-sm">로그인 상태 유지</span>
           </label>
@@ -150,6 +186,7 @@ export default function SignIn() {
             )}
           </button>
         </form>
+
         {/* 회원가입 링크 */}
         <p className="text-center text-sm mt-4">
           계정이 없으신가요?{" "}
@@ -160,6 +197,19 @@ export default function SignIn() {
             회원가입
           </a>
         </p>
+
+        {/* Toast 메시지 (위치 개선) */}
+        {toast && (
+          <div className="toast toast-bottom toast-center z-50">
+            <div
+              className={`alert ${
+                toast.type === "error" ? "alert-error" : "alert-success"
+              }`}
+            >
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -6,7 +6,8 @@ import BookSearch from "./pages/BookSearch";
 import WritePage from "./pages/write";
 import MyPage from "./pages/MyPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import SignIn from "./pages/Sign-in";
+import SignIn from "./pages/Sign-In";
+import SignUp from "./pages/Sign-up";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="*" element={<div>없는페이지임</div>} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/SignIn" element={<SignIn />} />
+        <Route path="/SignUp" element={<SignUp />} />
       </Routes>
       <Footer />
     </Router>
