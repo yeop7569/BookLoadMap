@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { signInAnonymously, signOut, onAuthStateChange } from "./supabase";
+import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
+// 1. 새로운 supabase 설정 파일에서 필요한 함수만 가져옵니다.
+import supabase from "../lib/supabase";
 import useBookStore from "../store/useBookStore";
 import {
   searchBooksAPI,
@@ -10,6 +12,7 @@ import BookCard from "../components/BookCard";
 import SelectedBooksModal from "../components/SelectedBookModal";
 
 export default function WritePage() {
+  const navigate = useNavigate(); // 이동 함수
   const [searchText, setSearchText] = useState("");
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,15 +34,25 @@ export default function WritePage() {
 
   const isAuthenticated = !!user;
 
-  // 1. 인증 상태 리스너
+  // 1. 인증 상태 리스너 (실제 Supabase 세션 감시)
   useEffect(() => {
-    const subscription = onAuthStateChange((currentUser) => {
-      setUser(currentUser);
+    // 세션 정보를 가져오고 변경사항을 구독합니다.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
     });
-    return () => subscription?.unsubscribe();
+
+    return () => subscription.unsubscribe();
   }, [setUser]);
 
-  // 2. 데이터 로드 로직
+  // 2. 로그아웃 핸들러
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    alert("로그아웃 되었습니다.");
+  };
+
+  // 3. 데이터 로드 로직 (기존 유지)
   useEffect(() => {
     const loadData = async () => {
       setIsDataLoaded(false);
@@ -74,7 +87,7 @@ export default function WritePage() {
     setBooks([]);
   };
 
-  // 책 선택 핸들러
+  // 책 선택 핸들러 (로그인 안되어 있으면 로그인 페이지 권유)
   const selectBook = (book) => {
     if (!isAuthenticated) {
       setShowAuthPrompt(true);
@@ -85,22 +98,14 @@ export default function WritePage() {
     setShowAuthPrompt(false);
   };
 
-  // 저장 핸들러
+  // 저장 핸들러 (기존 유지)
   const handleSaveDraft = async () => {
-    if (!isAuthenticated || !user.id) {
-      console.error("로그인 상태가 아니므로 저장할 수 없습니다.");
-      return;
-    }
+    if (!isAuthenticated || !user.id) return;
 
     const success = await saveDraftToSupabase(selectedBooks, user.id);
-
     if (success) {
-      console.log(
-        `총 ${selectedBooks.length}권의 책 후기를 성공적으로 저장했습니다!`
-      );
+      alert("성공적으로 저장되었습니다.");
       closeModal();
-    } else {
-      console.error("저장 중 오류가 발생했습니다.");
     }
   };
 
@@ -108,47 +113,28 @@ export default function WritePage() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">도서 작성하기</h1>
 
-      {/* 상단 인증 버튼 영역 */}
-      <div className="text-right mb-4">
-        {isAuthenticated ? (
-          <div className="flex justify-end items-center space-x-2">
-            <span className="text-sm text-success font-semibold">
-              ✅ 로그인됨 (ID: {user.id.substring(0, 8)}...)
-            </span>
-            <button onClick={signOut} className="btn btn-xs btn-error">
-              로그아웃
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={signInAnonymously}
-            className="btn btn-sm btn-primary"
-          >
-            익명 로그인하기 (저장 필수)
-          </button>
-        )}
-      </div>
-
-      {/* 로그인 안내 메시지 */}
+      {/* 로그인 안내 메시지 - 로그인 페이지 유도 */}
       {showAuthPrompt && !isAuthenticated && (
         <div role="alert" className="alert alert-warning mb-4 shadow-lg">
-          <span>책 선택 및 후기 작성을 위해서는 로그인이 필요합니다.</span>
-          <button
-            onClick={signInAnonymously}
-            className="btn btn-sm btn-primary"
-          >
-            로그인하기
-          </button>
-          <button
-            onClick={() => setShowAuthPrompt(false)}
-            className="btn btn-sm btn-ghost"
-          >
-            닫기
-          </button>
+          <span>작성 내용을 저장하시려면 로그인이 필요합니다.</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate("/login")}
+              className="btn btn-sm btn-primary"
+            >
+              로그인하기
+            </button>
+            <button
+              onClick={() => setShowAuthPrompt(false)}
+              className="btn btn-sm btn-ghost"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       )}
 
-      {/* 검색창 영역 */}
+      {/* 검색창 영역 (기존 유지) */}
       <div className="flex mb-4 gap-2">
         <input
           type="text"
@@ -162,33 +148,21 @@ export default function WritePage() {
           검색
         </button>
         {(searchText.trim() || books.length > 0) && (
-          <button
-            onClick={clearSearchResults}
-            className="btn btn-ghost border border-gray-300"
-          >
+          <button onClick={clearSearchResults} className="btn btn-ghost border">
             초기화
           </button>
         )}
       </div>
 
-      {/* 선택 확인 버튼 */}
+      {/* 선택 확인 버튼 및 검색 결과 그리드 (기존 유지) */}
       {selectedBooks.length > 0 && (
         <div className="text-right mb-4">
           <button onClick={openModal} className="btn btn-warning">
-            선택한 책 ({selectedBooks.length}권) 확인 및 후기 작성
+            선택한 책 ({selectedBooks.length}권) 작성
           </button>
         </div>
       )}
 
-      {/* 로딩 표시 */}
-      {!isDataLoaded && (
-        <div className="text-center p-4">
-          <span className="loading loading-spinner loading-lg"></span>
-          <p>데이터 로드 중...</p>
-        </div>
-      )}
-
-      {/* 검색 결과 그리드 */}
       {loading && <p>불러오는 중...</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         {books.map((b) => {

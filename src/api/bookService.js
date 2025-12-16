@@ -1,4 +1,4 @@
-import { supabase } from "../pages/supabase";
+import supabase from "../lib/supabase";
 
 /**
  * 카카오 도서 검색 API

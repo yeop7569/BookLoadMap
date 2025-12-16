@@ -1,6 +1,3 @@
-import { BiArrowToLeft } from "react-icons/bi";
-import { useAuthStore } from "../store/authStore"; // 👈 Zustand Store 임포트
-export default MyPage;
 function MyPage() {
   // 💡 [핵심] 로컬 상태 대신 전역 상태만 구독합니다.
   const { isLoggedIn, login } = useAuthStore();
@@ -33,3 +30,4 @@ function MyPage() {
     </main>
   );
 }
+export default MyPage;

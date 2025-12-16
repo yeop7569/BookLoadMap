@@ -1,7 +1,6 @@
 import { useReducer } from "react";
-// PasswordInput 컴포넌트가 '../components/PasswordInput'에 있다고 가정
-// import PasswordInput from "../components/PasswordInput";
-// 여기서는 외부 컴포넌트 없이 간단한 input으로 대체하겠습니다.
+import { useNavigate } from "react-router-dom";
+import supabase from "../lib/supabase";
 const PasswordInput = ({ value, onChange, error, disabled, placeholder }) => (
   <>
     <input
@@ -10,7 +9,7 @@ const PasswordInput = ({ value, onChange, error, disabled, placeholder }) => (
       className={`input input-bordered w-full ${error ? "input-error" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => onChange(e.target.value, true)} // onBlur 시 isBlur = true 전달
+      onBlur={(e) => onChange(e.target.value, true)}
       disabled={disabled}
     />
     {/* 실제 PasswordInput은 비밀번호 보이기/숨기기 아이콘 포함 */}
@@ -70,6 +69,7 @@ export default function SignUp() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { email, password, confirmPassword, agreed, loading, toast, errors } =
     state;
+  const navigate = useNavigate();
 
   // --- 유효성 검사 로직 통합 함수 ---
   const validateField = (field, value, otherValues) => {
@@ -165,21 +165,33 @@ export default function SignUp() {
     dispatch({ type: "SET_TOAST", value: null }); // 기존 토스트 메시지 숨김
 
     try {
-      // 실제 API 호출 로직: await api.post('/signup', { email, password });
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      //수파베이스 연동
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: { emailRedirectTo: `${window.location.origin}/Signin` },
+      });
 
+      if (error) throw error;
       dispatch({
         type: "SET_TOAST",
         value: {
-          message: "회원가입 성공! 로그인 페이지로 이동합니다.",
+          message: "회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.",
           type: "success",
         },
       });
-      // 성공 후 로그인 페이지로 이동 로직: navigate('/login');
+
+      // Supabase 설정에 따라 즉시 가입되거나, 이메일 확인이 필요할 수 있습니다.
+      const isConfirmRequired = data.user && data.session === null;
+
+      // 2초 뒤 메인 페이지로 이동
+      if (!isConfirmRequired) {
+        setTimeout(() => navigate("/"), 1500);
+      }
     } catch (error) {
       dispatch({
         type: "SET_TOAST",
-        value: { message: "회원가입 실패. 다시 시도해주세요.", type: "error" },
+        value: { message: error.message, type: "error" },
       });
     } finally {
       dispatch({ type: "SET_LOADING", value: false });
