@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-// PasswordInput 컴포넌트가 '../components/PassWordInput'에 있다고 가정
-// 실제 코드에서는 import { useState, useEffect } from "react"; 아래에 위치해야 합니다.
-
-// --- 유효성 검사 함수 (변경 없음) ---
+import supabase from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 const isValidEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
@@ -18,36 +16,31 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-
+  const navigate = useNavigate();
   const [errors, setErrors] = useState({ email: "", password: "" }); // 에러 상태를 객체로 통합
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null); // Toast 상태 추가
 
-  // --- 1. Toast 메시지 자동 숨김 효과 (UX 개선) ---
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => {
         setToast(null);
-      }, 3000); // 3초 후 토스트 메시지 제거
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
 
-  // --- 2. 입력 필드 변경 핸들러 (값만 업데이트) ---
   const handleFieldChange = (field, value) => {
     if (field === "email") setEmail(value);
     if (field === "password") setPassword(value);
 
-    // 사용자가 입력하면 기존 에러 메시지 초기화 (UX 개선)
     setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // --- 3. onBlur 시 유효성 검사 핸들러 (UX 개선) ---
   const handleBlurValidation = (field, value) => {
     let errorMsg = "";
 
     if (value.length === 0) {
-      // 비어있는 경우 onBlur 시에는 에러 표시하지 않음 (onSubmit에서 처리)
       errorMsg = "";
     } else if (field === "email" && !isValidEmail(value)) {
       errorMsg = "올바른 이메일 형식이 아닙니다.";
@@ -62,7 +55,6 @@ export default function SignIn() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 4-1. 제출 시 최종 유효성 검사 및 에러 메시지 강제 설정
     let newErrors = { email: "", password: "" };
 
     if (!email) {
@@ -90,25 +82,34 @@ export default function SignIn() {
     setLoading(true);
     setToast(null); // 로딩 시작 시 토스트 메시지 숨김
 
-    // 4-3. 실제 서버 통신 모킹
+    // 수파베이스 연동 부분
     try {
-      // await api.post('/login', { email, password, remember });
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // 모킹 시간 1.5초
+      // 🚀 실제 Supabase 로그인 코드 적용
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+      console.log("로그인 시도 결과:", { data, error });
+
+      if (error) throw error; // 에러가 있으면 catch 블록으로 던짐
 
       // 성공 시
       setToast({ message: "로그인 성공! 환영합니다.", type: "success" });
-      // navigate('/dashboard'); // 페이지 이동 로직
+
+      // 2초 뒤 메인 페이지 또는 대시보드로 이동
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
     } catch (error) {
-      // 서버 에러 처리 (예: 401 Unauthorized)
+      // 서버 에러 처리 (비밀번호 틀림, 존재하지 않는 계정 등)
       setToast({
-        message: "로그인 실패. 이메일 또는 비밀번호를 확인해주세요.",
+        message: error.message || "로그인 실패. 정보를 확인해주세요.",
         type: "error",
       });
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <main className="w-full h-full min-h-[720px] flex justify-center items-center p-6">
       <div className="w-full max-w-md border rounded-xl shadow p-8 flex flex-col gap-6 bg-base-100">
@@ -147,7 +148,7 @@ export default function SignIn() {
             <div className="label">
               <span className="label-text font-medium">비밀번호</span>
             </div>
-            {/* PasswordInput 컴포넌트가 PasswordInput.jsx 파일에 있다고 가정 */}
+
             <input
               type="password"
               placeholder="비밀번호를 입력하세요"

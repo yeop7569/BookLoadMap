@@ -173,6 +173,18 @@ export default function SignUp() {
       });
 
       if (error) throw error;
+
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            id: data.user.id, // Auth에서 생성된 유저 ID
+            agreed: agreed, // state에 저장된 체크박스 값
+          },
+        ]);
+        if (profileError)
+          console.error("프로필 생성 실패:", profileError.message);
+      }
+
       dispatch({
         type: "SET_TOAST",
         value: {
@@ -186,7 +198,7 @@ export default function SignUp() {
 
       // 2초 뒤 메인 페이지로 이동
       if (!isConfirmRequired) {
-        setTimeout(() => navigate("/"), 1500);
+        setTimeout(() => navigate("/Signin"), 1500);
       }
     } catch (error) {
       dispatch({
