@@ -1,40 +1,37 @@
-import { Link } from "react-router-dom";
-// 1. authStore 대신 useBookStore를 가져옵니다.
-import useBookStore from "../store/useBookStore";
-// 2. 실제 로그아웃을 위해 supabase를 가져옵니다. (경로 확인 필요)
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/AuthStore";
 import supabase from "../lib/supabase";
 
-export default function Header() {
-  // 3. useBookStore에서 유저 정보와 설정 함수를 가져옵니다.
-  const { user, setUser } = useBookStore();
-  const isLoggedIn = !!user;
+function Header() {
+  const navigate = useNavigate();
 
-  // 로그아웃 핸들러
+  // Zustand 스토어에서 데이터와 로그아웃 함수 가져오기
+  const email = useAuthStore((state) => state.email);
+  const logout = useAuthStore((state) => state.logout);
+
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null); // 스토어의 유저 정보 비우기
-    alert("로그아웃 되었습니다.");
+    try {
+      await supabase.auth.signOut();
+      logout(); // Zustand 스토어 초기화
+      alert("로그아웃 되었습니다.");
+      navigate("/");
+    } catch (error) {
+      console.error("로그아웃 중 에러 발생:", error);
+    }
   };
 
   return (
     <header className="bg-white shadow-md p-4 flex justify-between items-center">
-      <Link to="/" className="text-xl font-bold text-blue-600">
+      {/* 로고 링크 */}
+      <NavLink to="/" className="text-xl font-bold text-blue-600">
         GuideBook
-      </Link>
+      </NavLink>
 
       <nav className="space-x-4 flex items-center">
-        {!isLoggedIn ? (
+        {/* email 값이 있을 때만 유저 정보와 로그아웃 버튼 표시 */}
+        {email ? (
           <>
-            {/* 4. 가짜 login 함수 대신 실제 로그인 페이지 링크 사용 */}
-            <Link to="/Signin" className="text-gray-700 hover:text-blue-500">
-              로그인
-            </Link>
-          </>
-        ) : (
-          <>
-            <span className="text-sm font-medium text-gray-600">
-              {user.email}님
-            </span>
+            <span className="text-sm font-medium text-gray-600">{email}님</span>
             <button
               onClick={handleLogout}
               className="text-gray-700 hover:text-blue-500"
@@ -42,12 +39,17 @@ export default function Header() {
               로그아웃
             </button>
           </>
+        ) : (
+          <NavLink to="/Signin" className="text-gray-700 hover:text-blue-500">
+            로그인
+          </NavLink>
         )}
 
+        {/* 마이페이지 링크 (email 존재 여부로 로그인 체크) */}
         <Link
-          to={isLoggedIn ? "/mypage" : "/Signin"} // 로그인 안됐으면 로그인 페이지로
+          to={email ? "/mypage" : "/Signin"}
           className={
-            isLoggedIn ? "text-gray-700 hover:text-blue-500" : "text-gray-400"
+            email ? "text-gray-700 hover:text-blue-500" : "text-gray-400"
           }
         >
           마이페이지
@@ -56,3 +58,5 @@ export default function Header() {
     </header>
   );
 }
+
+export default Header;
