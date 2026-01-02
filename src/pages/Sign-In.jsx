@@ -23,9 +23,8 @@ export default function SignIn() {
   const [toast, setToast] = useState(null);
 
   // 2. Zustand 스토어 함수 (이름을 storeSet...으로 명확히 구분)
-  const storeSetId = useAuthStore((state) => state.setId);
-  const storeSetEmail = useAuthStore((state) => state.setEmail);
-  const storeSetRole = useAuthStore((state) => state.setRole);
+
+  const storesetUser = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
     if (toast) {
@@ -54,7 +53,7 @@ export default function SignIn() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("로그인 시도 시작...");
+    console.log("로그인 시도 ");
 
     let newErrors = { email: "", password: "" };
     if (!emailInput) newErrors.email = "이메일을 입력해주세요.";
@@ -78,9 +77,11 @@ export default function SignIn() {
 
       if (data?.user) {
         // ✅ Zustand 스토어에 데이터 저장
-        storeSetId(data.user.id);
-        storeSetEmail(data.user.email);
-        storeSetRole(data.user.user_metadata?.role || "user");
+        storesetUser({
+          id: data.user.id,
+          email: data.user.email,
+          role: data.user.user_metadata?.role || "user",
+        });
 
         setToast({ message: "로그인 성공! 환영합니다.", type: "success" });
         setTimeout(() => navigate("/"), 1500);

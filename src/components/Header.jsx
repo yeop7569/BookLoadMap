@@ -6,6 +6,7 @@ function Header() {
   const navigate = useNavigate();
 
   // Zustand 스토어에서 데이터와 로그아웃 함수 가져오기
+
   const email = useAuthStore((state) => state.email);
   const logout = useAuthStore((state) => state.logout);
 
