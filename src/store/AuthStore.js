@@ -22,7 +22,7 @@ export const useAuthStore = create(
 
       logout: () => {
         set({ id: "", email: "", role: "" });
-        useAuthStore.persist.clearStorage();
+        useAuthStore.persist.clearStorage(); //auth 스토어 로그 자체도 삭제해줌
         // 로컬스토리지는 persist 설정에 의해 자동으로
       },
     }),

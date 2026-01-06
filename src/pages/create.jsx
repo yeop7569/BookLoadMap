@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
-// 1. 새로운 supabase 설정 파일에서 필요한 함수만 가져옵니다.
+import { useNavigate } from "react-router-dom";
 import supabase from "../lib/supabase";
 import useBookStore from "../store/useBookStore";
 import {
@@ -30,6 +29,7 @@ export default function WritePage() {
     closeModal,
     setBooksFromSupabase,
     setUser,
+    updateBookGenre,
   } = useBookStore();
 
   const isAuthenticated = !!user;
@@ -46,7 +46,7 @@ export default function WritePage() {
     return () => subscription.unsubscribe();
   }, [setUser]);
 
-  // 2. 로그아웃 핸들러
+  // 2. 로그아웃
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     alert("로그아웃 되었습니다.");
@@ -111,7 +111,7 @@ export default function WritePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">도서 작성하기</h1>
+      <h1 className="text-2xl font-bold mb-4">도서 루트 작성</h1>
 
       {/* 로그인 안내 메시지 - 로그인 페이지 유도 */}
       {showAuthPrompt && !isAuthenticated && (
@@ -149,7 +149,7 @@ export default function WritePage() {
         </button>
         {(searchText.trim() || books.length > 0) && (
           <button onClick={clearSearchResults} className="btn btn-ghost border">
-            초기화
+            리셋
           </button>
         )}
       </div>
@@ -187,6 +187,7 @@ export default function WritePage() {
           updateBookNote={updateBookNote}
           closeModal={closeModal}
           saveDraft={handleSaveDraft}
+          updateBookGenre={updateBookGenre}
           user={user}
         />
       )}

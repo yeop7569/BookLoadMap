@@ -1,15 +1,25 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
+import { useAuthStore } from "../store/AuthStore";
+import { toast } from "sonner";
 
 export default function BookSearch() {
   const [searchText, setSearchText] = useState("");
   const [isGridView, setIsGridView] = useState(true);
-
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const authId = useAuthStore((state) => state.id);
+  const navigate = useNavigate();
+  // 비로그인 작성하기 버튼 비활성
+  const handleRoute = () => {
+    if (!authId) {
+      toast.warning("루트 작성은 로그인이 필요합니다.");
+      return;
+    }
+    navigate("/create");
+  };
   // 카카오 책 검색 API 호출
   const searchBooks = async () => {
     if (!searchText.trim()) {
@@ -65,11 +75,13 @@ export default function BookSearch() {
         </div>
 
         {/* 작성하기 버튼 */}
-        <Link to="/write">
-          <button className="btn btn-primary  text-white-400">
-            나만의 도서 루트 만들기
-          </button>
-        </Link>
+
+        <button
+          className="btn btn-primary  text-white-400"
+          onClick={handleRoute}
+        >
+          나만의 도서 루트 작성
+        </button>
 
         {/* 뷰 토글 */}
         <div className="flex space-x-2">
@@ -104,7 +116,9 @@ export default function BookSearch() {
           {books.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-xl text-gray-500">
-                {searchText ? "검색 결과가 없습니다" : "검색어를 입력해 주세요"}
+                {searchText
+                  ? "검색 결과가 없습니다"
+                  : "원하시는 책이 있는지 확인해보세요 최대 18개까지 검색이 됩니다."}
               </p>
             </div>
           ) : (

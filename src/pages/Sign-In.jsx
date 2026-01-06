@@ -2,6 +2,7 @@ import { useAuthStore } from "../store/AuthStore";
 import { useState, useEffect } from "react";
 import supabase from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const isValidEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,18 +21,10 @@ export default function SignIn() {
   const navigate = useNavigate();
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
 
   // 2. Zustand 스토어 함수 (이름을 storeSet...으로 명확히 구분)
 
   const storesetUser = useAuthStore((state) => state.setUser);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
 
   const handleFieldChange = (field, value) => {
     if (field === "email") setEmailInput(value);
@@ -61,7 +54,7 @@ export default function SignIn() {
 
     setErrors(newErrors);
     if (newErrors.email || newErrors.password) {
-      setToast({ message: "입력한 정보를 확인해주세요.", type: "error" });
+      toast.error("입력한 정보를 확인해주세요.");
       return;
     }
 
@@ -83,14 +76,11 @@ export default function SignIn() {
           role: data.user.user_metadata?.role || "user",
         });
 
-        setToast({ message: "로그인 성공! 환영합니다.", type: "success" });
-        setTimeout(() => navigate("/"), 1500);
+        toast.success("로그인 성공! 환영합니다.");
+        setTimeout(() => navigate("/"), 500);
       }
     } catch (error) {
-      setToast({
-        message: error.message || "로그인 실패. 정보를 확인해주세요.",
-        type: "error",
-      });
+      toast.error(error.message || "로그인 실패.");
     } finally {
       setLoading(false);
     }

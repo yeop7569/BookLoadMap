@@ -48,6 +48,15 @@ const useBookStore = create((set) => ({
           : book
       ),
     })),
+  // 책 장르 입력
+  updateBookGenre: (bookKey, newGenre) =>
+    set((state) => ({
+      selectedBooks: state.selectedBooks.map((book) =>
+        (book.isbn || book.title) === bookKey
+          ? { ...book, genre: newGenre } // genre 필드 업데이트
+          : book
+      ),
+    })),
 
   // 모달 제어
   openModal: () => set({ isModalOpen: true }),
