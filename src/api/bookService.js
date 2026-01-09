@@ -1,11 +1,10 @@
 import supabase from "../lib/supabase";
 
 /**
- * 카카오 도서 검색 API
+ * 카카오 도서 검색 API (기존과 동일)
  */
 export const searchBooksAPI = async (query) => {
-  const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a";
-
+  const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a"; // 환경변수 VITE_KAKAO_API_KEY 권장
   if (!query.trim()) return [];
 
   try {
@@ -23,29 +22,27 @@ export const searchBooksAPI = async (query) => {
   }
 };
 
-export const saveDraftToSupabase = async (drafts, userId) => {
+/**
+ * 나만의 루트 저장 (임시 저장 또는 등록)
+ */
+export const saveRouteToSupabase = async (routeData, userId) => {
   if (!userId) {
     console.error("저장 실패: 사용자 ID가 없습니다.");
     return false;
   }
 
-  if (drafts.length === 0) {
-    console.log("저장할 내용이 없습니다.");
-    return true;
-  }
-
-  const dataToSave = {
-    user_id: userId,
-    draft_data: drafts,
-  };
-
   try {
-    const { error } = await supabase
-      .from("book_drafts")
-      .upsert(dataToSave, {
-        onConflict: "user_id",
-      })
-      .select();
+    const { error } = await supabase.from("Book_Route").upsert(
+      {
+        author: userId,
+        // 배열인 selectedBooks 전체를 저장하고 싶다면 DB 컬럼 타입이 jsonb여야 합니다.
+        // 만약 단일 컬럼들이라면 아래와 같이 첫 번째 책 정보를 매핑합니다.
+        route_title: selectedBooks[0]?.title + " 외 루트" || "새 루트",
+        book_title: selectedBooks[0]?.title || "",
+        comment: "임시 저장된 루트입니다.",
+      },
+      { onConflict: "author" }
+    );
 
     if (error) throw error;
     console.log("저장 성공");
@@ -56,29 +53,25 @@ export const saveDraftToSupabase = async (drafts, userId) => {
   }
 };
 
-export const loadDraftFromSupabase = async (userId) => {
-  if (!userId) return [];
+/**
+ * 저장된 루트 불러오기
+ */
+export const loadRouteFromSupabase = async (userId) => {
+  if (!userId) return null;
 
   try {
     const { data, error } = await supabase
-      .from("book_drafts")
-      .select("draft_data")
-      .eq("user_id", userId)
-      .single();
-
-    if (error && error.details?.includes("rows returned")) {
-      return [];
-    }
+      .from("Book_Route") // 💡 테이블 이름 변경
+      .select("*")
+      .eq("author", userId); // 💡 컬럼명 'author'로 변경
 
     if (error) throw error;
-
-    if (data && data.draft_data) {
-      console.log("불러오기 성공");
-      return data.draft_data;
+    if (data && data.length > 0) {
+      return data[0];
     }
-    return [];
+    return null;
   } catch (error) {
     console.error("Supabase 불러오기 중 오류 발생:", error.message);
-    return [];
+    return null;
   }
 };

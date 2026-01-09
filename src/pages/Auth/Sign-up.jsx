@@ -1,6 +1,6 @@
 import { useReducer } from "react";
 import { useNavigate } from "react-router-dom";
-import supabase from "../lib/supabase";
+import supabase from "../../lib/supabase";
 const PasswordInput = ({ value, onChange, error, disabled, placeholder }) => (
   <>
     <input

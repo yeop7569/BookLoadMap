@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Route, useNavigate, useParams } from "react-router-dom";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 import { useAuthStore } from "../store/AuthStore";
 import { toast } from "sonner";
+import supabase from "../lib/supabase";
 
 export default function BookSearch() {
   const [searchText, setSearchText] = useState("");
@@ -12,13 +13,40 @@ export default function BookSearch() {
   const [error, setError] = useState("");
   const authId = useAuthStore((state) => state.id);
   const navigate = useNavigate();
-  // 비로그인 작성하기 버튼 비활성
-  const handleRoute = () => {
+
+  const handleRoute = async () => {
     if (!authId) {
       toast.warning("루트 작성은 로그인이 필요합니다.");
       return;
     }
-    navigate("/create");
+    // 도서 루트 생성  버튼 클릭
+    //정책 auth.uid()= ahthor
+    const { data, error } = await supabase
+      .from("Book_Route")
+      .insert([
+        {
+          Route_title: null,
+          content: null,
+          thumbnail: null,
+          category: null,
+          book_title: null,
+          author: authId,
+        },
+      ])
+
+      .select();
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    console.log(data);
+
+    if (data) {
+      toast.success("루트를 생성하였습니다.");
+    }
+
+    navigate(`Route_Book/${data[0].id}/create`);
   };
   // 카카오 책 검색 API 호출
   const searchBooks = async () => {

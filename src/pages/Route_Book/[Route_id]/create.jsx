@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import supabase from "../lib/supabase";
-import useBookStore from "../store/useBookStore";
+import supabase from "../../../lib/supabase";
+import useBookStore from "../../../store/useBookStore";
 import {
   searchBooksAPI,
-  saveDraftToSupabase,
-  loadDraftFromSupabase,
-} from "../api/bookService";
-import BookCard from "../components/BookCard";
-import SelectedBooksModal from "../components/SelectedBookModal";
+  saveRouteToSupabase,
+  loadRouteFromSupabase,
+} from "../../../api/bookService";
+import BookCard from "../../../components/BookCard";
+import SelectedBooksModal from "../../../components/SelectedBookModal";
 
-export default function WritePage() {
+export default function CreatePage() {
   const navigate = useNavigate(); // 이동 함수
   const [searchText, setSearchText] = useState("");
   const [books, setBooks] = useState([]);
@@ -57,10 +57,13 @@ export default function WritePage() {
     const loadData = async () => {
       setIsDataLoaded(false);
       if (isAuthenticated && user?.id) {
-        const drafts = await loadDraftFromSupabase(user.id);
-        setBooksFromSupabase(drafts);
-      } else if (!isAuthenticated) {
-        setBooksFromSupabase([]);
+        const drafts = await loadRouteFromSupabase(user.id);
+        if (draft) {
+          // 스토어에는 배열 형태로 넣어줘야 에러가 안 납니다.
+          setBooksFromSupabase([draft]);
+        } else {
+          setBooksFromSupabase([]);
+        }
       }
       setIsDataLoaded(true);
     };
@@ -102,7 +105,7 @@ export default function WritePage() {
   const handleSaveDraft = async () => {
     if (!isAuthenticated || !user.id) return;
 
-    const success = await saveDraftToSupabase(selectedBooks, user.id);
+    const success = await saveRouteToSupabase(selectedBooks, user.id);
     if (success) {
       alert("성공적으로 저장되었습니다.");
       closeModal();
