@@ -46,21 +46,14 @@ export default function CreatePage() {
     return () => subscription.unsubscribe();
   }, [setUser]);
 
-  // 2. 로그아웃
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    alert("로그아웃 되었습니다.");
-  };
-
   // 3. 데이터 로드 로직 (기존 유지)
   useEffect(() => {
     const loadData = async () => {
       setIsDataLoaded(false);
       if (isAuthenticated && user?.id) {
         const drafts = await loadRouteFromSupabase(user.id);
-        if (draft) {
-          // 스토어에는 배열 형태로 넣어줘야 에러가 안 납니다.
-          setBooksFromSupabase([draft]);
+        if (drafts) {
+          setBooksFromSupabase([drafts]);
         } else {
           setBooksFromSupabase([]);
         }
@@ -102,6 +95,7 @@ export default function CreatePage() {
   };
 
   // 저장 핸들러 (기존 유지)
+
   const handleSaveDraft = async () => {
     if (!isAuthenticated || !user.id) return;
 
@@ -122,7 +116,7 @@ export default function CreatePage() {
           <span>작성 내용을 저장하시려면 로그인이 필요합니다.</span>
           <div className="flex gap-2">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/Signin")}
               className="btn btn-sm btn-primary"
             >
               로그인하기

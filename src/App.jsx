@@ -16,7 +16,10 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<MainPage />} />
-        <Route path="Route/:RouteIcreate" element={<CreatePage />} />
+        <Route
+          path="/BookSearch/Route_Book/:id/create"
+          element={<CreatePage />}
+        />
         <Route path="/booksearch" element={<BookSearch />} />
         <Route path="*" element={<div>없는페이지임</div>} />
         <Route path="/mypage" element={<MyPage />} />
