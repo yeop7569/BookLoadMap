@@ -4,6 +4,9 @@ import { FaSearch, FaList, FaTh } from "react-icons/fa";
 import { useAuthStore } from "../store/AuthStore";
 import { toast } from "sonner";
 import supabase from "../lib/supabase";
+import { LuNotebookPen } from "react-icons/lu";
+import { VscCircleSmall, VscCircleFilled } from "react-icons/vsc";
+import RouteDraft from "../components/RouteDraft";
 
 export default function BookSearch() {
   const [searchText, setSearchText] = useState("");
@@ -60,13 +63,13 @@ export default function BookSearch() {
       const size = 18;
       const res = await fetch(
         `https://dapi.kakao.com/v3/search/book?target=title&query=${encodeURIComponent(
-          searchText
+          searchText,
         )}&size=${size}`,
         {
           headers: {
             Authorization: `KakaoAK ${import.meta.env.VITE_KAKAO_API_KEY}`,
           },
-        }
+        },
       );
       if (!res.ok) throw new Error("API 요청 실패");
       const data = await res.json();
@@ -105,11 +108,23 @@ export default function BookSearch() {
         {/* 작성하기 버튼 */}
 
         <button
-          className="btn btn-primary  text-white-400"
+          className="btn btn-primary text-white-400"
           onClick={handleRoute}
         >
+          <LuNotebookPen />
           나만의 도서 루트 작성
         </button>
+        {/* 임시 저장 버튼  */}
+        <RouteDraft>
+          {" "}
+          <button className="btn btn-primary text-white-300 relative">
+            <LuNotebookPen size={20} />
+            <VscCircleFilled
+              size={16}
+              className="absolute -top-1 -right-1 text-red-500"
+            />
+          </button>
+        </RouteDraft>
 
         {/* 뷰 토글 */}
         <div className="flex space-x-2">
