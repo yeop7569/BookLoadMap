@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/AuthStore";
 import { toast } from "sonner";
 import supabase from "../lib/supabase";
 import { LuNotebookPen } from "react-icons/lu";
-import { VscCircleSmall, VscCircleFilled } from "react-icons/vsc";
+import { VscCircleFilled } from "react-icons/vsc";
 import RouteDraft from "../components/RouteDraft";
 
 export default function BookSearch() {

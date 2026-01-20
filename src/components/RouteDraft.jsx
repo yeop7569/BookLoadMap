@@ -1,5 +1,6 @@
 import React from "react";
 import { LuNotebookPen } from "react-icons/lu";
+import Separator from "./Ui/seperator";
 
 // 1. 버튼 컴포넌트 분리
 function DraftButton({ hasDraft, modalId }) {
@@ -35,9 +36,37 @@ function RouteDraft() {
       <div className="modal" role="dialog">
         <div className="modal-box">
           <h3 className="text-lg font-bold">임시 저장 루트</h3>
-          <p className="py-4">
+          <p className="py-4 opacity-50 text-base">
             작성 중인 루트가 있습니다 이어서 작성하거나 삭제하세요.
           </p>
+          <div className="grid gap-3 py-4">
+            <div className="flex items-center gap-2">
+              <p>임시 저장</p>
+              <p className=" text-base text-blue-600 -mr-[6px]">10</p>
+              <p>건</p>
+            </div>
+            <Separator />
+            <div className="min-h-60 flex items-center justify-center">
+              <p className="text-muted-foreground/50">정보가 없습니다.</p>
+            </div>
+            <div className="min-h-60  flex flex-col items-center justify-center gap-3">
+              <div className="w-full flex items-center justify-between py-2 px-4 rounded-md cursor-pointer">
+                <div className="flex items-start  gap-2">
+                  <div className="w-5 h-5 mt-[3px] aspect-square badge badge-primary text-foreground">
+                    1
+                  </div>
+                  <div className="flex flex-col ">
+                    <p>등록된 루트가 없습니다.</p>
+
+                    <p className="text-xs opacity-50">2026/1/21</p>
+                  </div>
+                </div>
+                <div className="badge badge-primary badge-outline badge-sm mt-2">
+                  작성중
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="modal-action">
             <label htmlFor={modalId} className="btn">
               닫기
