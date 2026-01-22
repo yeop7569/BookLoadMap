@@ -1,6 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LuNotebookPen } from "react-icons/lu";
 import Separator from "./Ui/seperator";
+import { toast } from "sonner";
+import { useAuthStore } from "../store/AuthStore";
+import supabase from "../lib/supabase";
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 // 1. 버튼 컴포넌트 분리
 function DraftButton({ hasDraft, modalId }) {
@@ -25,6 +30,29 @@ function DraftButton({ hasDraft, modalId }) {
 function RouteDraft() {
   const modalId = "my_modal_6";
   const [hasDraft, setHasDraft] = React.useState(true); // 나중에 데이터 유무에 따라 false로 바꿀 수 있음
+  const authId = useAuthStore((state) => state.id);
+  const [drafts, setDraft] = useState([]);
+  const navigate = useNavigate();
+  const fetchDrafts = async () => {
+    try {
+      let { data: Book_Route, error } = await supabase
+        .from("Book_Route")
+        .select("*")
+        .eq("author", authId)
+        .eq("status", null); // is는 널값만 가져옴
+
+      if (error) {
+        toast.error(error.message);
+
+        return;
+      }
+
+      if (Book_Route) setDraft(Book_Route);
+    } catch (error) {}
+  };
+  useEffect(() => {
+    if (authId) fetchDrafts();
+  }, [authId]);
 
   return (
     <>
@@ -42,29 +70,51 @@ function RouteDraft() {
           <div className="grid gap-3 py-4">
             <div className="flex items-center gap-2">
               <p>임시 저장</p>
-              <p className=" text-base text-blue-600 -mr-[6px]">10</p>
+              <p className=" text-base text-blue-600 -mr-[6px]">
+                {drafts.length}
+              </p>
               <p>건</p>
             </div>
             <Separator />
-            <div className="min-h-60 flex items-center justify-center">
-              <p className="text-muted-foreground/50">정보가 없습니다.</p>
-            </div>
-            <div className="min-h-60  flex flex-col items-center justify-center gap-3">
-              <div className="w-full flex items-center justify-between py-2 px-4 rounded-md cursor-pointer">
-                <div className="flex items-start  gap-2">
-                  <div className="w-5 h-5 mt-[3px] aspect-square badge badge-primary text-foreground">
-                    1
-                  </div>
-                  <div className="flex flex-col ">
-                    <p>등록된 루트가 없습니다.</p>
+            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {drafts.length > 0 ? (
+                drafts.map((draft, index) => {
+                  return (
+                    <div
+                      key={draft.id || index}
+                      className="min-h-20 h-50  flex flex-col items-center justify-start gap-3 "
+                    >
+                      <div
+                        className="w-full flex items-center justify-between py-2 px-4 rounded-md cursor-pointer"
+                        onClick={() =>
+                          navigate(`/BookSearch/Route_Book/${draft.id}/create`)
+                        }
+                      >
+                        <div className="flex items-start  gap-2">
+                          <div className="w-5 h-5 mt-[3px] aspect-square badge badge-primary text-foreground">
+                            {index + 1}
+                          </div>
+                          <div className="flex flex-col ">
+                            <p>{draft.Route_title || "제목없음"}</p>
 
-                    <p className="text-xs opacity-50">2026/1/21</p>
-                  </div>
+                            <p className="text-xs opacity-50">
+                              작성일 :
+                              {dayjs(draft.created_at).format("YYYY.MM.DD")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="badge badge-primary badge-outline badge-sm mt-2">
+                          작성중
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="min-h-60 flex items-center justify-center">
+                  <p className="text-muted-foreground/50">정보가 없습니다.</p>
                 </div>
-                <div className="badge badge-primary badge-outline badge-sm mt-2">
-                  작성중
-                </div>
-              </div>
+              )}
             </div>
           </div>
           <div className="modal-action">

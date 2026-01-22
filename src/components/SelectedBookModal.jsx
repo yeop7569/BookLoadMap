@@ -25,7 +25,7 @@ export default function SelectedBooksModal({
   // 발행/업데이트 핸들러
   const handlePublish = async () => {
     const updateData = {
-      status: "temp",
+      status: "null",
       Route_title: routeTitle,
       content: content,
       thumbnail: selectedBooks[0]?.thumbnail,
