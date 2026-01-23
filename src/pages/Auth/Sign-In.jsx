@@ -164,18 +164,6 @@ export default function SignIn() {
             회원가입
           </a>
         </p>
-
-        {toast && (
-          <div className="toast toast-bottom toast-center z-50">
-            <div
-              className={`alert ${
-                toast.type === "error" ? "alert-error" : "alert-success"
-              }`}
-            >
-              <span>{toast.message}</span>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
