@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import supabase from "../lib/supabase";
 import { useAuthStore } from "../store/AuthStore";
 import { useParams } from "react-router-dom";
+import useBookStore from "../store/useBookStore";
 
 export default function SelectedBooksModal({
   selectedBooks,
@@ -12,6 +13,7 @@ export default function SelectedBooksModal({
   user,
 }) {
   // 로드맵 전체에 대한 상태
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [routeTitle, setRouteTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
@@ -19,13 +21,53 @@ export default function SelectedBooksModal({
   const authId = useAuthStore((state) => state.id);
   const { id } = useParams();
   const isAuthenticated = !!user;
+  const setBooksFromSupabase = useBookStore(
+    (state) => state.setBooksFromSupabase,
+  );
+  useEffect(() => {
+    if (id && routeTitle === "") {
+      fetchRoute();
+    }
+  }, [id]);
 
-  if (selectedBooks.length === 0) return null;
+  // 임시 저장 글 불러 오기 및 수정 로직
+  const fetchRoute = async () => {
+    // 💡 [핵심] 이미 로드되었으면(true) 더 이상 DB에서 가져오지 마!
+    // 이거 없으면 새 책 추가해도 DB에 있는 옛날 책이 계속 덮어쓴다
+    if (!id || isDataLoaded) return;
 
+    try {
+      console.log(
+        "📡 새로고침 감지: DB에서 예전 데이터를 딱 한 번만 복구합니다.",
+      );
+      const { data, error } = await supabase
+        .from("Book_Route")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (data && data.selected_books) {
+        // 1. DB에 저장되어 있던 책 배열을 스토어에 넣기
+        setBooksFromSupabase(data.selected_books);
+
+        // 2. 다른 필드들도 복구 (있다면)
+        setRouteTitle(data.Route_title || "");
+        setCategory(data.category || "");
+        setContent(data.content || "");
+
+        // 3. ✅ [매우 중요] 로드 완료 상태로 변경!
+        // 그래야 다음부터 이 함수가 실행되어도 여기서 return으로 튕겨나갑니다.
+        setIsDataLoaded(true);
+      }
+    } catch (err) {
+      console.error("데이터 로드 에러:", err);
+    }
+  };
   // 발행/업데이트 핸들러
   const handlePublish = async () => {
     const updateData = {
       status: "null",
+      selected_books: selectedBooks,
       Route_title: routeTitle,
       content: content,
       thumbnail: selectedBooks[0]?.thumbnail,
@@ -60,141 +102,165 @@ export default function SelectedBooksModal({
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-3xl border-t-8 border-primary">
-        <h3 className="font-bold text-2xl text-primary mb-1">
-          나의 독서 로드맵 발행
-        </h3>
-        <p className="text-sm text-gray-500 mb-6">
-          전체적인 로드맵의 주제와 설명을 입력해주세요.
-        </p>
-        {/* --- 로드맵 정보 입력 영역 --- */}
-        <div className="grid grid-cols-1 gap-4 bg-base-200 p-5 rounded-2xl mb-6">
-          <div className="form-control">
-            <label className="label py-1">
-              <span className="label-text font-bold">로드맵 제목</span>
-            </label>
-            <input
-              type="text"
-              placeholder="예: 2024년 개발자 필독서 루트"
-              className="input input-bordered w-full"
-              value={routeTitle}
-              onChange={(e) => setRouteTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="form-control">
-              <label className="label py-1">
-                <span className="label-text font-bold">카테고리</span>
-              </label>
-              <input
-                type="text"
-                placeholder="예: IT/자기계발"
-                className="input input-bordered w-full"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              />
-            </div>
-            <div className="form-control">
-              <label className="label py-1">
-                <span className="label-text font-bold">대표 썸네일</span>
-              </label>
-              <div className="flex items-center gap-2 text-xs text-gray-400 border rounded-lg px-3 bg-white h-[3rem]">
-                {selectedBooks[0]?.thumbnail
-                  ? "✅ 첫 번째 도서 이미지 자동 선택"
-                  : "선택된 도서 없음"}
-              </div>
+        {selectedBooks.length === 0 ? (
+          /* --- Case 1: 선택된 책이 없을 때 (Empty State) --- */
+          <div className="py-12 text-center">
+            <div className="text-5xl mb-4">📖</div>
+            <h3 className="text-xl font-bold text-gray-700">
+              선택된 도서가 없습니다
+            </h3>
+            <p className="text-gray-500 mt-2">
+              로드맵 발행을 위해 책을 추가해 주세요.
+            </p>
+            <div className="modal-action justify-center mt-6">
+              <button onClick={closeModal} className="btn btn-primary px-10">
+                확인
+              </button>
             </div>
           </div>
-
-          {/* 상세 설명 영역 */}
-          <div className="form-control mt-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start">
-              <label className="label pt-2 w-full md:w-32 shrink-0">
-                <span className="label-text font-bold text-base text-gray-700">
-                  로드맵 상세 설명
-                </span>
-              </label>
-              <div className="flex-grow w-full">
-                <textarea
-                  placeholder="이 로드맵에 대한 전체적인 소개를 적어주세요."
-                  className="textarea textarea-bordered w-full h-32 text-sm leading-relaxed"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                ></textarea>
-                <p className="text-xs text-gray-400 mt-1 pl-1">
-                  ※ 로드맵의 목적이나 추천 대상을 상세히 적으면 더 많은 사람이
-                  조회합니다.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>{" "}
-        <h4 className="font-bold mb-3 flex items-center gap-2">
-          📚 포함된 도서 리스트{" "}
-          <div className="badge badge-secondary">{selectedBooks.length}</div>
-        </h4>
-        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-          {selectedBooks.map((book) => {
-            const bookKey = book.isbn || book.title;
-            return (
-              <div
-                key={bookKey}
-                className="flex gap-4 border p-3 rounded-xl bg-white shadow-sm relative"
-              >
-                <img
-                  src={
-                    book.thumbnail ||
-                    "https://placehold.co/80x120?text=No+Image"
-                  }
-                  alt={book.title}
-                  className="w-16 h-24 object-cover rounded shadow-sm flex-shrink-0"
+        ) : (
+          <>
+            <h3 className="font-bold text-2xl text-primary mb-1">
+              나의 독서 로드맵 발행
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              전체적인 로드맵의 주제와 설명을 입력해주세요.
+            </p>
+            {/* --- 로드맵 정보 입력 영역 --- */}
+            <div className="grid grid-cols-1 gap-4 bg-base-200 p-5 rounded-2xl mb-6">
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text font-bold">로드맵 제목</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="예: 2024년 개발자 필독서 루트"
+                  className="input input-bordered w-full"
+                  value={routeTitle || ""}
+                  onChange={(e) => setRouteTitle(e.target.value)}
                 />
-                <div className="flex-grow">
-                  <h5 className="font-bold text-sm line-clamp-1">
-                    {book.title}
-                  </h5>
-                  <p className="text-xs text-gray-400 mb-2">
-                    {Array.isArray(book.authors)
-                      ? book.authors.join(", ")
-                      : book.authors}
-                  </p>
-                  <textarea
-                    className="textarea textarea-bordered w-full text-xs h-16 leading-tight"
-                    placeholder="이 책을 추천하는 이유를 적어주세요."
-                    value={book.note || ""}
-                    onChange={(e) => updateBookNote(bookKey, e.target.value)}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-bold">카테고리</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="예: IT/자기계발"
+                    className="input input-bordered w-full"
+                    value={category || ""}
+                    onChange={(e) => setCategory(e.target.value)}
                   />
                 </div>
-                <button
-                  onClick={() => removeBook(book)}
-                  className="btn btn-circle btn-ghost btn-xs text-error absolute top-2 right-2"
-                >
-                  ✕
-                </button>
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-bold">대표 썸네일</span>
+                  </label>
+                  <div className="flex items-center gap-2 text-xs text-gray-400 border rounded-lg px-3 bg-white h-[3rem]">
+                    {selectedBooks[0]?.thumbnail
+                      ? "✅ 첫 번째 도서 이미지 자동 선택"
+                      : "선택된 도서 없음"}
+                  </div>
+                </div>
               </div>
-            );
-          })}
-        </div>
-        {/* --- 하단 액션 버튼 --- */}
-        <div className="modal-action mt-8">
-          <button onClick={closeModal} className="btn btn-ghost">
-            닫기
-          </button>
-          <button
-            onClick={handleSave}
-            className="btn btn-outline btn-info"
-            disabled={!isAuthenticated}
-          >
-            임시 저장
-          </button>
-          <button
-            onClick={handlePublish}
-            className="btn btn-warning px-10 shadow-lg"
-            disabled={!isAuthenticated}
-          >
-            로드맵 발행하기
-          </button>
-        </div>
+
+              {/* 상세 설명 영역 */}
+              <div className="form-control mt-4">
+                <div className="flex flex-col md:flex-row gap-4 items-start">
+                  <label className="label pt-2 w-full md:w-32 shrink-0">
+                    <span className="label-text font-bold text-base text-gray-700">
+                      로드맵 상세 설명
+                    </span>
+                  </label>
+                  <div className="flex-grow w-full">
+                    <textarea
+                      placeholder="이 로드맵에 대한 전체적인 소개를 적어주세요."
+                      className="textarea textarea-bordered w-full h-32 text-sm leading-relaxed"
+                      value={content || ""}
+                      onChange={(e) => setContent(e.target.value)}
+                    ></textarea>
+                    <p className="text-xs text-gray-400 mt-1 pl-1">
+                      ※ 로드맵의 목적이나 추천 대상을 상세히 적으면 더 많은
+                      사람이 조회합니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>{" "}
+            <h4 className="font-bold mb-3 flex items-center gap-2">
+              📚 포함된 도서 리스트{" "}
+              <div className="badge badge-secondary">
+                {selectedBooks.length}
+              </div>
+            </h4>
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              {selectedBooks.map((book) => {
+                const bookKey = book.isbn || book.title;
+                return (
+                  <div
+                    key={bookKey}
+                    className="flex gap-4 border p-3 rounded-xl bg-white shadow-sm relative"
+                  >
+                    <img
+                      src={
+                        book.thumbnail ||
+                        "https://placehold.co/80x120?text=No+Image"
+                      }
+                      alt={book.title}
+                      className="w-16 h-24 object-cover rounded shadow-sm flex-shrink-0"
+                    />
+                    <div className="flex-grow">
+                      <h5 className="font-bold text-black text-sm line-clamp-1 ">
+                        {book.title}
+                      </h5>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {Array.isArray(book.authors)
+                          ? book.authors.join(", ")
+                          : book.authors}
+                      </p>
+                      <textarea
+                        className="textarea textarea-bordered w-full text-xs h-16 leading-tight"
+                        placeholder="이 책을 추천하는 이유를 적어주세요."
+                        value={book.note || ""}
+                        onChange={(e) =>
+                          updateBookNote(bookKey, e.target.value)
+                        }
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeBook(book)}
+                      className="btn btn-circle btn-ghost btn-xs text-error absolute top-2 right-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            {/* --- 하단 액션 버튼 --- */}
+            <div className="modal-action mt-8">
+              <button onClick={closeModal} className="btn btn-ghost">
+                닫기
+              </button>
+              <button
+                onClick={handleSave}
+                className="btn btn-outline btn-info"
+                disabled={!isAuthenticated}
+              >
+                임시 저장
+              </button>
+              <button
+                onClick={handlePublish}
+                className="btn btn-warning px-10 shadow-lg"
+                disabled={!isAuthenticated}
+              >
+                로드맵 발행하기
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

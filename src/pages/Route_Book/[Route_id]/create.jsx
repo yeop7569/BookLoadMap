@@ -49,13 +49,12 @@ export default function CreatePage() {
   // 3. 데이터 로드 로직 (기존 유지)
   useEffect(() => {
     const loadData = async () => {
+      if (!user?.id || isDataLoaded) return;
       setIsDataLoaded(false);
       if (isAuthenticated && user?.id) {
         const drafts = await loadRouteFromSupabase(user.id);
         if (drafts) {
           setBooksFromSupabase([drafts]);
-        } else {
-          setBooksFromSupabase([]);
         }
       }
       setIsDataLoaded(true);
@@ -64,7 +63,7 @@ export default function CreatePage() {
     if (user !== undefined) {
       loadData();
     }
-  }, [user, isAuthenticated, setBooksFromSupabase]);
+  }, [user?.id]);
 
   // 검색 핸들러
   const searchBooks = async () => {
@@ -164,7 +163,7 @@ export default function CreatePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         {books.map((b) => {
           const isSelected = selectedBooks.some(
-            (sb) => (sb.isbn || sb.title) === (b.isbn || b.title)
+            (sb) => (sb.isbn || sb.title) === (b.isbn || b.title),
           );
           return (
             <BookCard

@@ -16,13 +16,18 @@ const useBookStore = create((set) => ({
       set({ selectedBooks: [], isModalOpen: false });
     }
   },
+  // 💡 DB에서 가져온 책 배열을 한 번에 스토어에 넣는 함수
+  setBooksFromSupabase: (books) =>
+    set({
+      selectedBooks: Array.isArray(books) ? books : [],
+    }),
 
   // 책 추가 (중복 체크 포함)
   addBook: (book) =>
     set((state) => {
       const key = book.isbn || book.title;
       const isAlreadySelected = state.selectedBooks.some(
-        (b) => (b.isbn || b.title) === key
+        (b) => (b.isbn || b.title) === key,
       );
       if (isAlreadySelected) return state;
 
@@ -35,7 +40,8 @@ const useBookStore = create((set) => ({
   removeBook: (bookToRemove) =>
     set((state) => ({
       selectedBooks: state.selectedBooks.filter(
-        (b) => (b.isbn || b.title) !== (bookToRemove.isbn || bookToRemove.title)
+        (b) =>
+          (b.isbn || b.title) !== (bookToRemove.isbn || bookToRemove.title),
       ),
     })),
 
@@ -45,7 +51,7 @@ const useBookStore = create((set) => ({
       selectedBooks: state.selectedBooks.map((book) =>
         (book.isbn || book.title) === bookKey
           ? { ...book, note: newNote }
-          : book
+          : book,
       ),
     })),
   // 책 장르 입력
@@ -54,7 +60,7 @@ const useBookStore = create((set) => ({
       selectedBooks: state.selectedBooks.map((book) =>
         (book.isbn || book.title) === bookKey
           ? { ...book, genre: newGenre } // genre 필드 업데이트
-          : book
+          : book,
       ),
     })),
 
