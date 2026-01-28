@@ -13,10 +13,14 @@ export default function SelectedBooksModal({
   user,
 }) {
   // 로드맵 전체에 대한 상태
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [routeTitle, setRouteTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [category, setCategory] = useState("");
+  const {
+    routeTitle,
+    setRouteTitle,
+    category,
+    setCategory,
+    content,
+    setContent,
+  } = useBookStore();
 
   const authId = useAuthStore((state) => state.id);
   const { id } = useParams();
@@ -24,45 +28,7 @@ export default function SelectedBooksModal({
   const setBooksFromSupabase = useBookStore(
     (state) => state.setBooksFromSupabase,
   );
-  useEffect(() => {
-    if (id && routeTitle === "") {
-      fetchRoute();
-    }
-  }, [id]);
 
-  // 임시 저장 글 불러 오기 및 수정 로직
-  const fetchRoute = async () => {
-    // 💡 [핵심] 이미 로드되었으면(true) 더 이상 DB에서 가져오지 마!
-    // 이거 없으면 새 책 추가해도 DB에 있는 옛날 책이 계속 덮어쓴다
-    if (!id || isDataLoaded) return;
-
-    try {
-      console.log(
-        "📡 새로고침 감지: DB에서 예전 데이터를 딱 한 번만 복구합니다.",
-      );
-      const { data, error } = await supabase
-        .from("Book_Route")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (data && data.selected_books) {
-        // 1. DB에 저장되어 있던 책 배열을 스토어에 넣기
-        setBooksFromSupabase(data.selected_books);
-
-        // 2. 다른 필드들도 복구 (있다면)
-        setRouteTitle(data.Route_title || "");
-        setCategory(data.category || "");
-        setContent(data.content || "");
-
-        // 3. ✅ [매우 중요] 로드 완료 상태로 변경!
-        // 그래야 다음부터 이 함수가 실행되어도 여기서 return으로 튕겨나갑니다.
-        setIsDataLoaded(true);
-      }
-    } catch (err) {
-      console.error("데이터 로드 에러:", err);
-    }
-  };
   // 발행/업데이트 핸들러
   const handlePublish = async () => {
     const updateData = {

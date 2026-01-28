@@ -9,17 +9,26 @@ import {
 } from "../../../api/bookService";
 import BookCard from "../../../components/BookCard";
 import SelectedBooksModal from "../../../components/SelectedBookModal";
+import { useParams } from "react-router-dom";
 
 export default function CreatePage() {
   const navigate = useNavigate(); // 이동 함수
   const [searchText, setSearchText] = useState("");
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const {
+    routeTitle,
+    setRouteTitle,
+    category,
+    setCategory,
+    content,
+    setContent,
     user,
+    isDataLoaded,
+    setIsDataLoaded,
     selectedBooks,
     isModalOpen,
     addBook,
@@ -33,6 +42,42 @@ export default function CreatePage() {
   } = useBookStore();
 
   const isAuthenticated = !!user;
+
+  const { id } = useParams();
+
+  // 💡 부모 페이지가 열리자마자 실행되는 데이터 복구 로직
+  useEffect(() => {
+    const loadInitialData = async () => {
+      // ID가 있고 아직 로드 전이라면 실행
+      if (id && !isDataLoaded) {
+        try {
+          console.log("📡 페이지 접속 감지: DB에서 데이터를 복구합니다.");
+          const { data, error } = await supabase
+            .from("Book_Route")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+          if (data && data.selected_books) {
+            // 1. 책 리스트 복구 (Zustand)
+            setBooksFromSupabase(data.selected_books);
+
+            // 2. 제목, 카테고리 등 나머지 정보 복구 (CreatePage의 useState)
+            setRouteTitle(data.Route_title || "");
+            setCategory(data.category || "");
+            setContent(data.content || "");
+
+            // 3. ✅ 문지기 통과! (이제 더 이상 fetch 안 함)
+            setIsDataLoaded(true);
+          }
+        } catch (err) {
+          console.error("데이터 로드 실패:", err);
+        }
+      }
+    };
+
+    loadInitialData();
+  }, [id, isDataLoaded]); // ID나 로드 상태가 바뀔 때 체크
 
   // 1. 인증 상태 리스너 (실제 Supabase 세션 감시)
   useEffect(() => {
@@ -49,21 +94,25 @@ export default function CreatePage() {
   // 3. 데이터 로드 로직 (기존 유지)
   useEffect(() => {
     const loadData = async () => {
-      if (!user?.id || isDataLoaded) return;
-      setIsDataLoaded(false);
-      if (isAuthenticated && user?.id) {
+      // 💡 조건문 강화: id가 있거나 이미 로드됐다면 실행하지 않음
+      if (!user?.id || isDataLoaded || id) return;
+
+      try {
+        setIsDataLoaded(false);
         const drafts = await loadRouteFromSupabase(user.id);
         if (drafts) {
-          setBooksFromSupabase([drafts]);
+          setBooksFromSupabase(Array.isArray(drafts) ? drafts : [drafts]);
         }
+        setIsDataLoaded(true);
+      } catch (error) {
+        console.error("데이터 로드 중 오류:", error);
       }
-      setIsDataLoaded(true);
     };
 
     if (user !== undefined) {
       loadData();
     }
-  }, [user?.id]);
+  }, [user?.id, isDataLoaded, id]);
 
   // 검색 핸들러
   const searchBooks = async () => {
