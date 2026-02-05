@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import supabase from "../lib/supabase";
 import { useAuthStore } from "../store/AuthStore";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import useBookStore from "../store/useBookStore";
-
+import { useNavigate } from "react-router-dom";
 export default function SelectedBooksModal({
   selectedBooks,
   removeBook,
@@ -21,7 +21,7 @@ export default function SelectedBooksModal({
     content,
     setContent,
   } = useBookStore();
-
+  const navigate = useNavigate();
   const authId = useAuthStore((state) => state.id);
   const { id } = useParams();
   const isAuthenticated = !!user;
@@ -32,7 +32,7 @@ export default function SelectedBooksModal({
   // 발행/업데이트 핸들러
   const handlePublish = async () => {
     const updateData = {
-      status: "null",
+      status: "Publish",
       selected_books: selectedBooks,
       Route_title: routeTitle,
       content: content,
@@ -52,8 +52,9 @@ export default function SelectedBooksModal({
       toast.error(error.message);
     } else {
       if (data && data.length > 0) {
-        toast.success("성공!");
+        toast.success("로드맵을 발행하였습니다!");
         closeModal();
+        navigate("/");
       } else {
         // 💡 여기가 실행된다면 ID가 일치하는 행을 못 찾은 것입니다.
         toast.error("업데이트할 대상을 찾지 못했습니다. (ID 불일치)");
