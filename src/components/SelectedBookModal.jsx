@@ -28,6 +28,27 @@ export default function SelectedBooksModal({
   const setBooksFromSupabase = useBookStore(
     (state) => state.setBooksFromSupabase,
   );
+  //발행된 로드맵 조회
+  const [routes, setRoutes] = useState([]);
+  const fetchBooks = async () => {
+    try {
+      const { data: Book_Routes, error } = await supabase
+        .from("Book_Route")
+        .select("*")
+        .eq("status", "Publish");
+
+      if (error) {
+        toast.error(error.message);
+      }
+
+      if (Book_Routes) {
+        setRoutes(Book_Routes);
+      }
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  };
 
   // 발행/업데이트 핸들러
   const handlePublish = async () => {
@@ -62,8 +83,34 @@ export default function SelectedBooksModal({
     }
   };
 
-  const handleSave = () => {
-    toast.info("작성 내용을 로컬에 유지합니다.");
+  const handleSave = async () => {
+    const updateData = {
+      status: "draft",
+      selected_books: selectedBooks,
+      Route_title: routeTitle,
+      content: content,
+      thumbnail: selectedBooks[0]?.thumbnail,
+      category: category,
+      book_title: selectedBooks.map((b) => b.title).join(", "),
+      author: authId,
+    };
+
+    const { data, error } = await supabase
+      .from("Book_Route")
+      .update(updateData)
+      .eq("id", id)
+      .select();
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      if (data && data.length > 0) {
+        toast.success("임시 저장완료!");
+        closeModal();
+      } else {
+        toast.error("업데이트할 대상을 찾지 못했습니다. (ID 불일치)");
+      }
+    }
   };
 
   return (
