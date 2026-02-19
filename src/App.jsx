@@ -7,6 +7,7 @@ import MyPage from "./pages/MyPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SignIn from "./pages/Auth/Sign-In";
 import SignUp from "./pages/Auth/Sign-up";
+import RouteDetail from "./pages/Route_Book/[Route_id]/Detail";
 import { Toaster } from "sonner";
 
 function App() {
@@ -19,6 +20,10 @@ function App() {
         <Route
           path="/BookSearch/Route_Book/:id/create"
           element={<CreatePage />}
+        />
+        <Route
+          path="/BookSearch/Route_Book/:id/detail"
+          element={<RouteDetail />}
         />
         <Route path="/booksearch" element={<BookSearch />} />
         <Route path="*" element={<div>없는페이지임</div>} />
