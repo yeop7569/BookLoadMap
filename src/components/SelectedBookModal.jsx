@@ -28,27 +28,6 @@ export default function SelectedBooksModal({
   const setBooksFromSupabase = useBookStore(
     (state) => state.setBooksFromSupabase,
   );
-  //발행된 로드맵 조회
-  const [routes, setRoutes] = useState([]);
-  const fetchBooks = async () => {
-    try {
-      const { data: Book_Routes, error } = await supabase
-        .from("Book_Route")
-        .select("*")
-        .eq("status", "Publish");
-
-      if (error) {
-        toast.error(error.message);
-      }
-
-      if (Book_Routes) {
-        setRoutes(Book_Routes);
-      }
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  };
 
   // 발행/업데이트 핸들러
   const handlePublish = async () => {

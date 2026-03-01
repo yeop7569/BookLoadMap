@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { LuNotebookPen } from "react-icons/lu";
-import Separator from "./Ui/seperator";
+import Separator from "../components/Ui/Separator";
 import { toast } from "sonner";
 import { useAuthStore } from "../store/AuthStore";
 import supabase from "../lib/supabase";
