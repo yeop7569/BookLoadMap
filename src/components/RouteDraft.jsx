@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { LuNotebookPen } from "react-icons/lu";
-import Separator from "../components/Ui/Separator";
 import { toast } from "sonner";
 import { useAuthStore } from "../store/AuthStore";
 import supabase from "../lib/supabase";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 
-// 1. 버튼 컴포넌트 (동일)
+// 1. 버튼 컴포넌트
 function DraftButton({ hasDraft, modalId }) {
   return (
     <label
@@ -27,22 +27,22 @@ function DraftButton({ hasDraft, modalId }) {
 }
 
 // 2. 메인 페이지 컴포넌트
-function RouteDraft() {
+function RouteDraft({ children }) {
   const modalId = "my_modal_6";
-  const [hasDraft, setHasDraft] = useState(false); // 초기값 false로 변경
+  const [hasDraft, setHasDraft] = useState(false);
   const authId = useAuthStore((state) => state.id);
   const [drafts, setDraft] = useState([]);
   const navigate = useNavigate();
 
   const fetchDrafts = async () => {
-    if (!authId) return; // 로그인 안 되어 있으면 중단
+    if (!authId) return;
 
     try {
       let { data: Book_Route, error } = await supabase
         .from("Book_Route")
         .select("*")
         .eq("author", authId)
-        .eq("status", "draft"); // 👈 null에서 "draft"로 수정!
+        .eq("status", "draft");
 
       if (error) {
         toast.error(error.message);
@@ -51,7 +51,6 @@ function RouteDraft() {
 
       if (Book_Route) {
         setDraft(Book_Route);
-        // 데이터가 1개라도 있으면 true, 없으면 false
         setHasDraft(Book_Route.length > 0);
       }
     } catch (error) {
@@ -63,79 +62,85 @@ function RouteDraft() {
     if (authId) fetchDrafts();
   }, [authId]);
 
-  return (
+  const modalContent = (
     <>
-      <DraftButton hasDraft={hasDraft} modalId={modalId} />
-
       <input type="checkbox" id={modalId} className="modal-toggle" />
-      <div className="modal" role="dialog">
-        <div className="modal-box">
-          <h3 className="text-lg font-bold">임시 저장 루트</h3>
-          <p className="py-4 opacity-50 text-base">
-            작성 중인 루트가 있습니다 이어서 작성하거나 삭제하세요.
+      <div className="modal z-[1000]" role="dialog">
+        <div className="modal-box bg-zinc-950 border border-zinc-800 rounded-[32px] p-8 shadow-2xl overflow-hidden max-w-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+               <span className="text-blue-500">임시 저장</span> 로드맵
+            </h3>
+            <label htmlFor={modalId} className="btn btn-ghost btn-sm rounded-full">✕</label>
+          </div>
+          
+          <p className="text-zinc-500 mb-8 font-medium">
+            작성 중단했던 로드맵이 있습니다. <br />
+            이어서 작성하거나 관리할 수 있습니다.
           </p>
-
-          <div className="grid gap-3 py-4">
-            <div className="flex items-center gap-2 font-bold">
-              <p>임시 저장</p>
-              <p className="text-base text-blue-600 -mr-[6px]">
-                {drafts.length}
-              </p>
-              <p>건</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <span className="text-xs font-bold text-zinc-600 uppercase tracking-widest">저장된 목록 ({drafts.length})</span>
             </div>
-            <Separator />
-
-            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            
+            <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar space-y-3">
               {drafts.length > 0 ? (
                 drafts.map((draft, index) => (
                   <div
                     key={draft.id}
-                    className="flex flex-col border-b last:border-none hover:bg-base-200 rounded-lg transition-colors"
+                    className="group flex items-center justify-between p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer"
+                    onClick={() => {
+                      document.getElementById(modalId).checked = false;
+                      navigate(`/BookSearch/Route_Book/${draft.id}/create`);
+                    }}
                   >
-                    <div
-                      className="w-full flex items-center justify-between py-4 px-4 cursor-pointer"
-                      onClick={() => {
-                        // 모달 닫기 위해 체크박스 해제 (선택사항)
-                        document.getElementById(modalId).checked = false;
-                        navigate(`/BookSearch/Route_Book/${draft.id}/create`);
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">
-                          {index + 1}
-                        </div>
-                        <div className="flex flex-col">
-                          <p className="font-semibold text-gray-800 line-clamp-1">
-                            {draft.Route_title || "제목 없는 로드맵"}
-                          </p>
-                          <p className="text-xs opacity-50">
-                            작성일 :{" "}
-                            {dayjs(draft.created_at).format("YYYY.MM.DD")}
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-sm">
+                        {index + 1}
                       </div>
-                      <div className="badge badge-primary badge-outline badge-sm shrink-0">
-                        작성중
+                      <div>
+                        <p className="font-bold text-zinc-200 group-hover:text-blue-400 transition-colors line-clamp-1">
+                          {draft.Route_title || "제목 없는 로드맵"}
+                        </p>
+                        <p className="text-[11px] text-zinc-600 mt-1">
+                          {dayjs(draft.created_at).format("YYYY년 MM월 DD일 작성")}
+                        </p>
                       </div>
+                    </div>
+                    <div className="text-xs font-bold text-zinc-500 group-hover:text-blue-500 transition-colors">
+                      열기 🡥
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="min-h-40 flex flex-col items-center justify-center gap-2">
-                  <div className="text-4xl opacity-20">📂</div>
-                  <p className="text-gray-400">임시 저장된 정보가 없습니다.</p>
+                <div className="py-20 flex flex-col items-center justify-center gap-4 bg-zinc-900/20 rounded-3xl border border-zinc-800/50 border-dashed">
+                  <span className="text-4xl opacity-20">📂</span>
+                  <p className="text-zinc-600 font-medium">저장된 임시 로드맵이 없습니다.</p>
                 </div>
               )}
             </div>
           </div>
-
-          <div className="modal-action">
-            <label htmlFor={modalId} className="btn btn-ghost">
+          <div className="modal-action mt-10">
+            <label htmlFor={modalId} className="btn bg-zinc-800 hover:bg-zinc-700 border-none text-white rounded-xl px-8 font-bold w-full h-14 min-h-[auto]">
               닫기
             </label>
           </div>
         </div>
+        <label className="modal-backdrop" htmlFor={modalId}>Close</label>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {children ? (
+        <label htmlFor={modalId} className="cursor-pointer">
+          {children}
+        </label>
+      ) : (
+        <DraftButton hasDraft={hasDraft} modalId={modalId} />
+      )}
+      {createPortal(modalContent, document.body)}
     </>
   );
 }
