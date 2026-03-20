@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -7,12 +7,13 @@ import "swiper/css/pagination";
 import { Link } from "react-router-dom";
 import supabase from "../lib/supabase";
 import { toast } from "sonner";
+import type { BookRoute } from "../types";
 
 export default function MainPage() {
-  const [routes, setRoutes] = useState([]);
+  const [routes, setRoutes] = useState<BookRoute[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     try {
       setLoading(true);
       const { data: Book_Routes, error } = await supabase
@@ -26,24 +27,24 @@ export default function MainPage() {
       }
 
       if (Book_Routes) {
-        setRoutes(Book_Routes);
+        setRoutes(Book_Routes as BookRoute[]);
       }
     } catch (error) {
-      console.log(error);
+      if (error instanceof Error) {
+        console.log(error.message);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRoutes();
-  }, []);
+  }, [fetchRoutes]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Hero Section */}
       <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        {/* Background Gradients */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/20 blur-[120px] rounded-full"></div>
 
@@ -68,7 +69,10 @@ export default function MainPage() {
               </button>
             </Link>
             <button 
-              onClick={() => document.getElementById('explore').scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => {
+                const el = document.getElementById('explore');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="btn btn-outline btn-lg rounded-full px-12 text-white border-white/20 hover:bg-white/5 hover:border-white/40 transition-all"
             >
               최신 로드맵 탐색
@@ -76,12 +80,10 @@ export default function MainPage() {
           </div>
         </div>
 
-        {/* Floating Background Icons (Subtle) */}
         <div className="absolute top-1/4 left-10 text-6xl opacity-10 animate-pulse rotate-12">📚</div>
         <div className="absolute bottom-1/4 right-10 text-6xl opacity-10 animate-pulse -rotate-12">🚀</div>
       </section>
 
-      {/* 로드맵 섹션 */}
       <div id="explore" className="max-w-7xl mx-auto px-6 py-32">
         <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
           <div className="max-w-xl">
@@ -130,12 +132,12 @@ export default function MainPage() {
             {routes.map((route) => (
               <SwiperSlide key={route.id}>
                 <div className="group relative h-full bg-zinc-900/50 rounded-[32px] overflow-hidden border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-500 flex flex-col">
-                  {/* Image Area */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
                       src={route.thumbnail || "https://placehold.co/600x400?text=No+Image"}
                       alt={route.Route_title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
                     {route.category && (
@@ -145,7 +147,6 @@ export default function MainPage() {
                     )}
                   </div>
 
-                  {/* Content Area */}
                   <div className="p-8 flex flex-col flex-grow">
                     <h3 className="text-xl font-bold mb-3 line-clamp-1 group-hover:text-blue-400 transition-colors leading-tight">
                       {route.Route_title || "제목 없는 로드맵"}
@@ -175,7 +176,7 @@ export default function MainPage() {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes gradient {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }

@@ -1,7 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const useAuthStore = create(
+interface AuthState {
+  id: string;
+  email: string;
+  role: string;
+  setId: (newId: string) => void;
+  setEmail: (newEmail: string) => void;
+  setRole: (newRole: string) => void;
+  setUser: (userData: { id: string; email: string; role?: string }) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       id: "",
@@ -12,7 +23,6 @@ export const useAuthStore = create(
       setEmail: (newEmail) => set({ email: newEmail }),
       setRole: (newRole) => set({ role: newRole }),
 
-      // 3. 한꺼번에 유저 정보 설정
       setUser: (userData) =>
         set({
           id: userData.id,
@@ -22,13 +32,12 @@ export const useAuthStore = create(
 
       logout: () => {
         set({ id: "", email: "", role: "" });
-        useAuthStore.persist.clearStorage(); //auth 스토어 로그 자체도 삭제해줌
-        // 로컬스토리지는 persist 설정에 의해 자동으로
+        useAuthStore.persist.clearStorage();
       },
     }),
 
     {
-      name: "auth-storage", // 로컬스토리지 이름
+      name: "auth-storage",
     }
   )
 );

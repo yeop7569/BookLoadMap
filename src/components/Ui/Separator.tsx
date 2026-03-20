@@ -1,9 +1,18 @@
-const Separator = ({
+import React, { memo } from "react";
+
+interface SeparatorProps {
+  orientation?: "horizontal" | "vertical";
+  className?: string;
+  thickness?: string;
+  color?: string;
+}
+
+const Separator = memo(({
   orientation = "horizontal",
   className = "",
   thickness = "1px",
-  color = "bg-base-300", // DaisyUI의 기본 경계선 색상 활용
-}) => {
+  color = "bg-zinc-800",
+}: SeparatorProps) => {
   const isHorizontal = orientation === "horizontal";
 
   return (
@@ -17,6 +26,8 @@ const Separator = ({
       }}
     />
   );
-};
+});
+
+Separator.displayName = "Separator";
 
 export default Separator;

@@ -1,21 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { LuNotebookPen } from "react-icons/lu";
+import { LuNotebookPen, LuTrash2 } from "react-icons/lu";
+import { VscCircleFilled } from "react-icons/vsc";
 import { toast } from "sonner";
 import { useAuthStore } from "../store/AuthStore";
 import supabase from "../lib/supabase";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import type { BookRoute } from "../types";
 
-// 1. 버튼 컴포넌트
-function DraftButton({ hasDraft, modalId }) {
+interface DraftButtonProps {
+  hasDraft: boolean;
+  modalId: string;
+}
+
+function DraftButton({ hasDraft, modalId }: DraftButtonProps) {
   return (
     <label
       htmlFor={modalId}
       className="btn btn-primary text-white-300 relative"
     >
       <LuNotebookPen size={20} />
-      {/* 데이터가 있을 때만 빨간 점 표시 */}
       {hasDraft && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -26,19 +31,22 @@ function DraftButton({ hasDraft, modalId }) {
   );
 }
 
-// 2. 메인 페이지 컴포넌트
-function RouteDraft({ children }) {
+interface RouteDraftProps {
+  children?: React.ReactNode;
+}
+
+function RouteDraft({ children }: RouteDraftProps) {
   const modalId = "my_modal_6";
   const [hasDraft, setHasDraft] = useState(false);
   const authId = useAuthStore((state) => state.id);
-  const [drafts, setDraft] = useState([]);
+  const [drafts, setDrafts] = useState<BookRoute[]>([]);
   const navigate = useNavigate();
 
-  const fetchDrafts = async () => {
+  const fetchDrafts = useCallback(async () => {
     if (!authId) return;
 
     try {
-      let { data: Book_Route, error } = await supabase
+      const { data: Book_Route, error } = await supabase
         .from("Book_Route")
         .select("*")
         .eq("author", authId)
@@ -50,23 +58,49 @@ function RouteDraft({ children }) {
       }
 
       if (Book_Route) {
-        setDraft(Book_Route);
+        setDrafts(Book_Route as BookRoute[]);
         setHasDraft(Book_Route.length > 0);
       }
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [authId]);
 
   useEffect(() => {
     if (authId) fetchDrafts();
-  }, [authId]);
+  }, [authId, fetchDrafts]);
+
+  const handleDeleteDraft = useCallback(async (draftId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm("정말로 이 임시 저장된 로드맵을 삭제하시겠습니까?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("Book_Route")
+        .delete()
+        .eq("id", draftId)
+        .eq("author", authId);
+
+      if (error) {
+        toast.error("삭제 실패: " + error.message);
+      } else {
+        toast.success("임시 저장 로드맵이 삭제되었습니다.");
+        const updatedDrafts = drafts.filter((d) => d.id !== draftId);
+        setDrafts(updatedDrafts);
+        setHasDraft(updatedDrafts.length > 0);
+      }
+    } catch (error) {
+      toast.error("삭제 중 오류가 발생했습니다.");
+    }
+  }, [authId, drafts]);
 
   const modalContent = (
     <>
       <input type="checkbox" id={modalId} className="modal-toggle" />
       <div className="modal z-[1000]" role="dialog">
-        <div className="modal-box bg-zinc-950 border border-zinc-800 rounded-[32px] p-8 shadow-2xl overflow-hidden max-w-lg">
+        <div className="modal-box bg-zinc-950 border border-zinc-800 rounded-[40px] p-8 shadow-2xl overflow-hidden max-w-lg">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
                <span className="text-blue-500">임시 저장</span> 로드맵
@@ -88,9 +122,10 @@ function RouteDraft({ children }) {
                 drafts.map((draft, index) => (
                   <div
                     key={draft.id}
-                    className="group flex items-center justify-between p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer"
+                    className="group flex items-center justify-between p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-all cursor-pointer relative"
                     onClick={() => {
-                      document.getElementById(modalId).checked = false;
+                      const checkbox = document.getElementById(modalId) as HTMLInputElement;
+                      if (checkbox) checkbox.checked = false;
                       navigate(`/BookSearch/Route_Book/${draft.id}/create`);
                     }}
                   >
@@ -107,8 +142,17 @@ function RouteDraft({ children }) {
                         </p>
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-zinc-500 group-hover:text-blue-500 transition-colors">
-                      열기 🡥
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleDeleteDraft(draft.id || "", e)}
+                        className="btn btn-ghost btn-xs h-8 w-8 p-0 rounded-lg text-zinc-700 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        title="삭제"
+                      >
+                        <LuTrash2 size={16} />
+                      </button>
+                      <div className="text-xs font-bold text-zinc-500 group-hover:text-blue-500 transition-colors ml-1">
+                        열기 🡥
+                      </div>
                     </div>
                   </div>
                 ))
@@ -134,9 +178,16 @@ function RouteDraft({ children }) {
   return (
     <>
       {children ? (
-        <label htmlFor={modalId} className="cursor-pointer">
-          {children}
-        </label>
+        <div className="relative inline-block">
+          <label htmlFor={modalId} className="cursor-pointer">
+            {children}
+          </label>
+          {hasDraft && (
+            <span className="absolute top-3 right-3 text-red-500 animate-pulse pointer-events-none z-10">
+              <VscCircleFilled size={14} />
+            </span>
+          )}
+        </div>
       ) : (
         <DraftButton hasDraft={hasDraft} modalId={modalId} />
       )}

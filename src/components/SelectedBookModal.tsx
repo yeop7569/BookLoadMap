@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import { toast } from "sonner";
 import supabase from "../lib/supabase";
 import { useAuthStore } from "../store/AuthStore";
-import { Navigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import useBookStore from "../store/useBookStore";
-import { useNavigate } from "react-router-dom";
+import type { Book, User } from "../types";
+
+interface SelectedBooksModalProps {
+  selectedBooks: Book[];
+  removeBook: (book: Book) => void;
+  closeModal: () => void;
+  updateBookNote: (bookKey: string, newNote: string) => void;
+  updateBookGenre: (bookKey: string, newGenre: string) => void;
+  saveDraft: () => void;
+  user: User | null;
+}
 
 export default function SelectedBooksModal({
   selectedBooks,
@@ -12,8 +22,7 @@ export default function SelectedBooksModal({
   closeModal,
   updateBookNote,
   user,
-}) {
-  // 로드맵 전체에 대한 상태
+}: SelectedBooksModalProps) {
   const {
     routeTitle,
     setRouteTitle,
@@ -22,13 +31,15 @@ export default function SelectedBooksModal({
     content,
     setContent,
   } = useBookStore();
+  
   const navigate = useNavigate();
   const authId = useAuthStore((state) => state.id);
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const isAuthenticated = !!user;
 
-  // 발행/업데이트 핸들러
-  const handlePublish = async () => {
+  const handlePublish = useCallback(async () => {
+    if (!authId) return;
+
     const updateData = {
       status: "Publish",
       selected_books: selectedBooks,
@@ -67,9 +78,11 @@ export default function SelectedBooksModal({
         toast.error("처리 대상을 찾지 못했습니다.");
       }
     }
-  };
+  }, [authId, selectedBooks, routeTitle, content, category, id, closeModal, navigate]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (!authId) return;
+
     const updateData = {
       status: "draft",
       selected_books: selectedBooks,
@@ -103,7 +116,6 @@ export default function SelectedBooksModal({
       if (data && data.length > 0) {
         toast.success(id === "new" ? "신규 로드맵이 임시 저장되었습니다!" : "임시 저장완료!");
         if (id === "new") {
-          // 신규 생성의 경우 생성된 ID로 URL 변경 (새로고침 시에도 유지되도록)
           navigate(`/BookSearch/Route_Book/${data[0].id}/create`, { replace: true });
         }
         closeModal();
@@ -111,7 +123,7 @@ export default function SelectedBooksModal({
         toast.error("처리 대상을 찾지 못했습니다.");
       }
     }
-  };
+  }, [authId, selectedBooks, routeTitle, content, category, id, closeModal, navigate]);
 
   return (
     <div className="modal modal-open z-[110]">
@@ -125,7 +137,6 @@ export default function SelectedBooksModal({
           </div>
         ) : (
           <div className="flex flex-col h-[85vh]">
-            {/* Header */}
             <div className="px-10 py-8 border-b border-zinc-800 bg-black/40 backdrop-blur-xl">
               <h3 className="text-3xl font-black text-white tracking-tighter flex items-center gap-3">
                 <span className="text-blue-500">지식의 길</span> 구성하기
@@ -133,9 +144,7 @@ export default function SelectedBooksModal({
               <p className="text-sm text-zinc-500 mt-2">이 로드맵이 가리키는 방향을 상세히 설명해 주세요.</p>
             </div>
 
-            {/* Scrollable Content */}
             <div className="flex-grow overflow-y-auto px-10 py-8 custom-scrollbar space-y-10">
-              {/* 로드맵 기본 정보 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="form-control">
@@ -145,7 +154,7 @@ export default function SelectedBooksModal({
                     <input
                       type="text"
                       placeholder="예: 2024년 주니어 개발자 성장 루트"
-                      className="input w-full bg-zinc-900/50 border-zinc-800 focus:border-blue-500 rounded-2xl h-14 text-white font-medium placeholder:text-zinc-700 transition-all font-sans"
+                      className="input w-full bg-zinc-900/50 border-zinc-800 focus:border-blue-500 rounded-2xl h-14 text-white font-medium placeholder:text-zinc-700 transition-all"
                       value={routeTitle || ""}
                       onChange={(e) => setRouteTitle(e.target.value)}
                     />
@@ -178,12 +187,11 @@ export default function SelectedBooksModal({
                 </div>
               </div>
 
-              {/* 도서 리스트 */}
               <div>
                 <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-6 border-l-2 border-blue-500 pl-4">수록 도서 큐레이션 ({selectedBooks.length})</h4>
                 <div className="space-y-6">
                   {selectedBooks.map((book, idx) => {
-                    const bookKey = book.isbn || book.title;
+                    const bookKey = book.isbn || book.title || "";
                     return (
                       <div
                         key={bookKey}
@@ -197,6 +205,7 @@ export default function SelectedBooksModal({
                               src={book.thumbnail || "https://placehold.co/80x120?text=No+Image"}
                               alt={book.title}
                               className="w-20 h-28 object-cover rounded-xl shadow-2xl transition-transform group-hover:scale-105"
+                              loading="lazy"
                             />
                          </div>
                         <div className="flex-grow space-y-4">
@@ -226,7 +235,6 @@ export default function SelectedBooksModal({
               </div>
             </div>
 
-            {/* Footer Actions */}
             <div className="px-10 py-8 bg-zinc-900/60 border-t border-zinc-800 backdrop-blur-xl flex justify-between items-center gap-4">
                <button onClick={closeModal} className="text-zinc-500 font-bold hover:text-white transition-colors">나중에 하기</button>
                <div className="flex gap-4">

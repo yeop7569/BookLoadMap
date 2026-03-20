@@ -1,9 +1,10 @@
+import React from "react";
+
 function Footer() {
   return (
     <footer className="w-full bg-[#0a0a0a] border-t border-zinc-900 pt-20 pb-12">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          {/* Company Info */}
           <div className="col-span-1 md:col-span-2 space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center">
@@ -24,7 +25,6 @@ function Footer() {
             </div>
           </div>
 
-          {/* Links 1 */}
           <div className="space-y-6">
             <h4 className="text-xs font-black uppercase tracking-widest text-zinc-600">Platform</h4>
             <ul className="space-y-4">
@@ -34,7 +34,6 @@ function Footer() {
             </ul>
           </div>
 
-          {/* Links 2 */}
           <div className="space-y-6">
             <h4 className="text-xs font-black uppercase tracking-widest text-zinc-600">Policy</h4>
             <ul className="space-y-4">

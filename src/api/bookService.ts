@@ -1,10 +1,12 @@
 import supabase from "../lib/supabase";
+import type { Book, BookRoute } from "../types";
+
+const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a"; // TODO: Use environment variable
 
 /**
- * 카카오 도서 검색 API (기존과 동일)
+ * 카카오 도서 검색 API
  */
-export const searchBooksAPI = async (query) => {
-  const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a"; // 환경변수 VITE_KAKAO_API_KEY 권장
+export const searchBooksAPI = async (query: string): Promise<Book[]> => {
   if (!query.trim()) return [];
 
   try {
@@ -25,7 +27,7 @@ export const searchBooksAPI = async (query) => {
 /**
  * 나만의 루트 저장 (임시 저장 또는 등록)
  */
-export const saveRouteToSupabase = async (routeData, userId) => {
+export const saveRouteToSupabase = async (selectedBooks: Book[], userId: string): Promise<boolean> => {
   if (!userId) {
     console.error("저장 실패: 사용자 ID가 없습니다.");
     return false;
@@ -35,8 +37,6 @@ export const saveRouteToSupabase = async (routeData, userId) => {
     const { error } = await supabase.from("Book_Route").upsert(
       {
         author: userId,
-        // 배열인 selectedBooks 전체를 저장하고 싶다면 DB 컬럼 타입이 jsonb여야 합니다.
-        // 만약 단일 컬럼들이라면 아래와 같이 첫 번째 책 정보를 매핑합니다.
         route_title: selectedBooks[0]?.title + " 외 루트" || "새 루트",
         book_title: selectedBooks[0]?.title || "",
         comment: "임시 저장된 루트입니다.",
@@ -48,7 +48,11 @@ export const saveRouteToSupabase = async (routeData, userId) => {
     console.log("저장 성공");
     return true;
   } catch (error) {
-    console.error("Supabase 저장 중 오류 발생:", error.message);
+    if (error instanceof Error) {
+      console.error("Supabase 저장 중 오류 발생:", error.message);
+    } else {
+      console.error("Supabase 저장 중 알 수 없는 오류 발생");
+    }
     return false;
   }
 };
@@ -56,22 +60,26 @@ export const saveRouteToSupabase = async (routeData, userId) => {
 /**
  * 저장된 루트 불러오기
  */
-export const loadRouteFromSupabase = async (userId) => {
+export const loadRouteFromSupabase = async (userId: string): Promise<BookRoute | null> => {
   if (!userId) return null;
 
   try {
     const { data, error } = await supabase
-      .from("Book_Route") // 💡 테이블 이름 변경
+      .from("Book_Route")
       .select("*")
-      .eq("author", userId); // 💡 컬럼명 'author'로 변경
+      .eq("author", userId);
 
     if (error) throw error;
     if (data && data.length > 0) {
-      return data[0];
+      return data[0] as BookRoute;
     }
     return null;
   } catch (error) {
-    console.error("Supabase 불러오기 중 오류 발생:", error.message);
+    if (error instanceof Error) {
+      console.error("Supabase 불러오기 중 오류 발생:", error.message);
+    } else {
+      console.error("Supabase 불러오기 중 알 수 없는 오류 발생");
+    }
     return null;
   }
 };

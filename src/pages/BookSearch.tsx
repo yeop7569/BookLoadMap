@@ -1,33 +1,30 @@
-import React, { useState } from "react";
-import { Link, Route, useNavigate, useParams } from "react-router-dom";
+import React, { useState, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 import { useAuthStore } from "../store/AuthStore";
 import { toast } from "sonner";
-import supabase from "../lib/supabase";
 import { LuNotebookPen } from "react-icons/lu";
-import { VscCircleFilled } from "react-icons/vsc";
 import RouteDraft from "../components/RouteDraft";
+import type { Book } from "../types";
 
 export default function BookSearch() {
   const [searchText, setSearchText] = useState("");
   const [isGridView, setIsGridView] = useState(true);
-  const [books, setBooks] = useState([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const authId = useAuthStore((state) => state.id);
   const navigate = useNavigate();
 
-  const handleRoute = () => {
+  const handleRoute = useCallback(() => {
     if (!authId) {
       toast.warning("루트 작성은 로그인이 필요합니다.");
       return;
     }
-    // 더 이상 미리 insert하지 않고, 작성 페이지로 이동 후 저장 시점에 생성합니다.
     navigate(`Route_Book/new/create`);
-  };
+  }, [authId, navigate]);
 
-  // 카카오 책 검색 API 호출
-  const searchBooks = async () => {
+  const searchBooks = useCallback(async () => {
     if (!searchText.trim()) {
       setBooks([]);
       return;
@@ -50,18 +47,79 @@ export default function BookSearch() {
       const data = await res.json();
       setBooks(data.documents || []);
     } catch (e) {
-      setError(e.message || "에러가 발생했어요.");
+      if (e instanceof Error) {
+        setError(e.message || "에러가 발생했어요.");
+      } else {
+        setError("알 수 없는 에러가 발생했어요.");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchText]);
 
-  const thumb = (url) => url || "https://placehold.co/400x400?text=No+Image";
+  const thumb = (url?: string) => url || "https://placehold.co/400x400?text=No+Image";
+
+  const renderedBooks = useMemo(() => {
+    return books.map((b) => {
+      const key = `${b.isbn}_${b.title}`;
+      return isGridView ? (
+        <Link
+          key={key}
+          className="group flex flex-col"
+          to={`/books/${encodeURIComponent(b.isbn || b.title)}`}
+        >
+          <div className="relative aspect-[2/3] mb-4 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg group-hover:shadow-blue-500/10">
+            <img
+              src={thumb(b.thumbnail)}
+              alt={b.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+              <p className="text-[10px] text-blue-400 font-bold uppercase mb-1">{b.publisher}</p>
+              <p className="text-[11px] text-zinc-300 line-clamp-1">
+                {Array.isArray(b.authors) ? b.authors.join(", ") : "저자 미상"}
+              </p>
+            </div>
+          </div>
+          <h2 className="text-sm font-bold text-zinc-300 group-hover:text-blue-400 transition-colors line-clamp-2 leading-tight px-1">
+            {b.title}
+          </h2>
+        </Link>
+      ) : (
+        <Link
+          key={key}
+          className="flex gap-6 p-6 bg-zinc-900/30 rounded-[32px] border border-zinc-800/50 hover:bg-zinc-900/60 hover:border-blue-500/30 transition-all group"
+          to={`/books/${encodeURIComponent(b.isbn || b.title)}`}
+        >
+          <img
+            src={thumb(b.thumbnail)}
+            alt={b.title}
+            className="w-24 h-36 object-cover rounded-xl shadow-lg border border-zinc-800"
+            loading="lazy"
+          />
+          <div className="flex flex-col justify-center">
+            <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">{b.publisher}</p>
+            <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors mb-2">
+              {b.title}
+            </h2>
+            <p className="text-sm text-zinc-400 mb-4">
+              {Array.isArray(b.authors) && b.authors.length > 0
+                ? b.authors.join(", ")
+                : "저자 정보 없음"}
+            </p>
+            <p className="text-xs text-zinc-500 line-clamp-2 md:line-clamp-none max-w-2xl leading-relaxed">
+              이 책에 대한 상세 설명은 준비 중입니다.
+            </p>
+          </div>
+        </Link>
+      );
+    });
+  }, [books, isGridView]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pt-10 pb-24">
       <div className="container mx-auto px-6">
-        {/* 상단: 타이틀 섹션 */}
         <div className="mb-16 text-center">
           <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
             새로운 지식의 <span className="text-blue-500">길을 찾아서</span>
@@ -71,7 +129,6 @@ export default function BookSearch() {
           </p>
         </div>
 
-        {/* 상단 액션바: 검색 + 작성하기 버튼 */}
         <div className="relative z-[110] mb-12 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-zinc-900/30 p-4 rounded-[32px] border border-zinc-800/50 backdrop-blur-xl">
           <div className="relative flex-grow max-w-2xl">
             <input
@@ -123,16 +180,11 @@ export default function BookSearch() {
             <RouteDraft>
               <div className="btn btn-ghost bg-zinc-900/50 hover:bg-zinc-900 h-14 w-14 p-0 rounded-2xl border border-zinc-800 relative group flex items-center justify-center cursor-pointer">
                 <LuNotebookPen size={20} className="text-zinc-400 group-hover:text-white transition-colors" />
-                <VscCircleFilled
-                  size={14}
-                  className="absolute top-3 right-3 text-red-500 animate-pulse"
-                />
               </div>
             </RouteDraft>
           </div>
         </div>
 
-        {/* 상태 표시 */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -146,7 +198,6 @@ export default function BookSearch() {
           </div>
         )}
 
-        {/* 결과 영역 */}
         {!loading && !error && (
           <>
             {books.length === 0 ? (
@@ -167,59 +218,7 @@ export default function BookSearch() {
                     : "grid-cols-1"
                 }`}
               >
-                {books.map((b) => {
-                  const key = `${b.isbn}_${b.datetime || b.title}`;
-                  return isGridView ? (
-                    <Link
-                      key={key}
-                      className="group flex flex-col"
-                      to={`/books/${encodeURIComponent(b.isbn || b.title)}`}
-                    >
-                      <div className="relative aspect-[2/3] mb-4 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-blue-500/50 transition-all duration-300 shadow-lg group-hover:shadow-blue-500/10">
-                        <img
-                          src={thumb(b.thumbnail)}
-                          alt={b.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                          <p className="text-[10px] text-blue-400 font-bold uppercase mb-1">{b.publisher}</p>
-                          <p className="text-[11px] text-zinc-300 line-clamp-1">
-                            {Array.isArray(b.authors) ? b.authors.join(", ") : "저자 미상"}
-                          </p>
-                        </div>
-                      </div>
-                      <h2 className="text-sm font-bold text-zinc-300 group-hover:text-blue-400 transition-colors line-clamp-2 leading-tight px-1">
-                        {b.title}
-                      </h2>
-                    </Link>
-                  ) : (
-                    <Link
-                      key={key}
-                      className="flex gap-6 p-6 bg-zinc-900/30 rounded-[32px] border border-zinc-800/50 hover:bg-zinc-900/60 hover:border-blue-500/30 transition-all group"
-                      to={`/books/${encodeURIComponent(b.isbn || b.title)}`}
-                    >
-                      <img
-                        src={thumb(b.thumbnail)}
-                        alt={b.title}
-                        className="w-24 h-36 object-cover rounded-xl shadow-lg border border-zinc-800"
-                      />
-                      <div className="flex flex-col justify-center">
-                        <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">{b.publisher}</p>
-                        <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors mb-2">
-                          {b.title}
-                        </h2>
-                        <p className="text-sm text-zinc-400 mb-4">
-                          {Array.isArray(b.authors) && b.authors.length > 0
-                            ? b.authors.join(", ")
-                            : "저자 정보 없음"}
-                        </p>
-                        <p className="text-xs text-zinc-500 line-clamp-2 md:line-clamp-none max-w-2xl leading-relaxed">
-                          이 책에 대한 상세 설명은 준비 중입니다.
-                        </p>
-                      </div>
-                    </Link>
-                  );
-                })}
+                {renderedBooks}
               </div>
             )}
           </>

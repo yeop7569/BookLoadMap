@@ -1,18 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAuthStore } from "../store/AuthStore";
 import supabase from "../lib/supabase";
 import { toast } from "sonner";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import type { BookRoute } from "../types";
 
 export default function MyPage() {
   const authId = useAuthStore((state) => state.id);
   const email = useAuthStore((state) => state.email);
-  const [myRoutes, setMyRoutes] = useState([]);
+  const [myRoutes, setMyRoutes] = useState<BookRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchMyRoutes = async () => {
+  const fetchMyRoutes = useCallback(async () => {
     if (!authId) return;
     try {
       setLoading(true);
@@ -25,22 +26,24 @@ export default function MyPage() {
       if (error) {
         toast.error(error.message);
       } else {
-        setMyRoutes(data || []);
+        setMyRoutes((data as BookRoute[]) || []);
       }
     } catch (error) {
-      console.error(error);
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [authId]);
 
   useEffect(() => {
     if (authId) {
       fetchMyRoutes();
     }
-  }, [authId]);
+  }, [authId, fetchMyRoutes]);
 
-  const handleDelete = async (id, e) => {
+  const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -51,18 +54,22 @@ export default function MyPage() {
         .from("Book_Route")
         .delete()
         .eq("id", id)
-        .eq("author", authId); // 본인 확인 안전장치
+        .eq("author", authId);
 
       if (error) {
         toast.error("삭제 실패: " + error.message);
       } else {
         toast.success("로드맵이 삭제되었습니다.");
-        setMyRoutes(myRoutes.filter((route) => route.id !== id));
+        setMyRoutes((prev) => prev.filter((route) => route.id !== id));
       }
     } catch (error) {
-      toast.error("에러가 발생했습니다.");
+      if (error instanceof Error) {
+        toast.error("에러가 발생했습니다: " + error.message);
+      } else {
+        toast.error("알 수 없는 에러가 발생했습니다.");
+      }
     }
-  };
+  }, [authId]);
 
   if (!authId) {
     return (
@@ -83,7 +90,6 @@ export default function MyPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pt-16 pb-24">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center gap-8 mb-16 bg-zinc-900/30 p-10 rounded-[40px] border border-zinc-800/50 backdrop-blur-xl">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-4xl shadow-2xl shadow-blue-500/20">
             👤
@@ -130,7 +136,6 @@ export default function MyPage() {
                 onClick={() => navigate(`/BookSearch/Route_Book/${route.id}/detail`)}
                 className="group relative bg-zinc-900/40 border border-zinc-800 rounded-[32px] overflow-hidden hover:border-blue-500/30 transition-all duration-300 cursor-pointer flex flex-col"
               >
-                {/* Status Badge */}
                 <div className="absolute top-4 right-4 z-10">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                     route.status === 'Publish' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-500'
@@ -144,6 +149,7 @@ export default function MyPage() {
                     src={route.thumbnail || "https://placehold.co/600x400?text=No+Image"} 
                     alt={route.Route_title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
                 </div>
@@ -172,7 +178,7 @@ export default function MyPage() {
                         수정
                       </button>
                       <button 
-                        onClick={(e) => handleDelete(route.id, e)}
+                        onClick={(e) => handleDelete(route.id || "", e)}
                         className="btn btn-ghost btn-sm h-9 px-4 rounded-xl text-zinc-700 hover:text-red-500 hover:bg-red-500/10 transition-colors text-xs font-bold"
                       >
                         삭제

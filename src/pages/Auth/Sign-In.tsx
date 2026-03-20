@@ -1,20 +1,20 @@
+import React, { useState, useCallback } from "react";
 import { useAuthStore } from "../../store/AuthStore";
-import { useState, useEffect } from "react";
 import supabase from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import PasswordInput from "../../components/PasswordInput";
 
-const isValidEmail = (email) => {
+const isValidEmail = (email: string) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
 
-const isValidPassword = (password) => {
+const isValidPassword = (password: string) => {
   return password.length >= 8;
 };
 
 export default function SignIn() {
-  // 1. 로컬 입력 상태 (setEmail 이름을 겹치지 않게 변경)
   const [emailInput, setEmailInput] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -22,17 +22,15 @@ export default function SignIn() {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
-  // 2. Zustand 스토어 함수 (이름을 storeSet...으로 명확히 구분)
-
   const storesetUser = useAuthStore((state) => state.setUser);
 
-  const handleFieldChange = (field, value) => {
+  const handleFieldChange = useCallback((field: "email" | "password", value: string) => {
     if (field === "email") setEmailInput(value);
     if (field === "password") setPassword(value);
     setErrors((prev) => ({ ...prev, [field]: "" }));
-  };
+  }, []);
 
-  const handleBlurValidation = (field, value) => {
+  const handleBlurValidation = useCallback((field: "email" | "password", value: string) => {
     let errorMsg = "";
     if (value.length === 0) {
       errorMsg = "";
@@ -42,12 +40,11 @@ export default function SignIn() {
       errorMsg = "비밀번호는 최소 8자 이상이어야 합니다.";
     }
     setErrors((prev) => ({ ...prev, [field]: errorMsg }));
-  };
+  }, []);
 
-  const handleLogin = async (e) => {
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("로그인 시도 ");
-
+    
     let newErrors = { email: "", password: "" };
     if (!emailInput) newErrors.email = "이메일을 입력해주세요.";
     if (!password) newErrors.password = "비밀번호를 입력해주세요.";
@@ -69,10 +66,9 @@ export default function SignIn() {
       if (error) throw error;
 
       if (data?.user) {
-        // ✅ Zustand 스토어에 데이터 저장
         storesetUser({
           id: data.user.id,
-          email: data.user.email,
+          email: data.user.email || "",
           role: data.user.user_metadata?.role || "user",
         });
 
@@ -80,30 +76,34 @@ export default function SignIn() {
         setTimeout(() => navigate("/"), 500);
       }
     } catch (error) {
-      toast.error(error.message || "로그인 실패.");
+      if (error instanceof Error) {
+        toast.error(error.message || "로그인 실패.");
+      } else {
+        toast.error("로그인 중 알 수 없는 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [emailInput, password, storesetUser, navigate]);
 
   return (
-    <main className="w-full h-full min-h-[720px] flex justify-center items-center p-6">
-      <div className="w-full max-w-md border rounded-xl shadow p-8 flex flex-col gap-6 bg-base-100">
-        <div className="flex flex-col gap-1">
-          <h4 className="text-2xl font-semibold">로그인 🔒</h4>
-          <p className="text-sm text-gray-500">계속하려면 로그인하세요</p>
+    <main className="w-full h-full min-h-[720px] flex justify-center items-center p-6 bg-[#0a0a0a]">
+      <div className="w-full max-w-md border border-zinc-800 rounded-[32px] shadow-2xl p-10 flex flex-col gap-8 bg-zinc-900/40 backdrop-blur-xl">
+        <div className="flex flex-col gap-2">
+          <h4 className="text-3xl font-black text-white tracking-tight">로그인 🔒</h4>
+          <p className="text-sm text-zinc-500 font-medium">지식의 여정을 다시 시작하세요</p>
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <form onSubmit={handleLogin} className="flex flex-col gap-6">
           <label className="form-control w-full">
             <div className="label">
-              <span className="label-text font-medium">이메일</span>
+              <span className="label-text font-medium text-zinc-400">이메일</span>
             </div>
             <input
               type="email"
               placeholder="이메일을 입력하세요"
-              className={`input input-bordered w-full ${
-                errors.email ? "input-error" : ""
+              className={`input input-bordered w-full bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 transition-all ${
+                errors.email ? "input-error border-red-500" : ""
               }`}
               value={emailInput}
               onChange={(e) => handleFieldChange("email", e.target.value)}
@@ -111,42 +111,35 @@ export default function SignIn() {
               disabled={loading}
             />
             {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              <p className="text-red-500 text-xs mt-2 font-medium">{errors.email}</p>
             )}
           </label>
 
-          <label className="form-control w-full">
-            <div className="label">
-              <span className="label-text font-medium">비밀번호</span>
-            </div>
-            <input
-              type="password"
-              placeholder="비밀번호를 입력하세요"
-              className={`input input-bordered w-full ${
-                errors.password ? "input-error" : ""
-              }`}
-              value={password}
-              onChange={(e) => handleFieldChange("password", e.target.value)}
-              onBlur={(e) => handleBlurValidation("password", e.target.value)}
-              disabled={loading}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
-          </label>
+          <PasswordInput
+            value={password}
+            onChange={(val) => handleFieldChange("password", val)}
+            error={!!errors.password}
+            disabled={loading}
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-[-16px] font-medium">{errors.password}</p>
+          )}
 
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-3 cursor-pointer group">
             <input
               type="checkbox"
-              className="checkbox"
+              className="checkbox checkbox-sm border-zinc-700 checked:border-blue-500 [--chkbg:theme(colors.blue.500)] [--chkfg:black]"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
               disabled={loading}
             />
-            <span className="text-sm">로그인 상태 유지</span>
+            <span className="text-xs font-bold text-zinc-500 group-hover:text-zinc-300 transition-colors">로그인 상태 유지</span>
           </label>
 
-          <button className="btn btn-neutral w-full mt-2" disabled={loading}>
+          <button 
+            className="btn btn-primary w-full h-14 rounded-2xl text-black font-black border-none shadow-xl shadow-blue-500/10 hover:scale-[1.02] transition-transform" 
+            disabled={loading}
+          >
             {loading ? (
               <span className="loading loading-spinner loading-sm"></span>
             ) : (
@@ -155,14 +148,14 @@ export default function SignIn() {
           </button>
         </form>
 
-        <p className="text-center text-sm mt-4">
+        <p className="text-center text-sm font-medium text-zinc-500">
           계정이 없으신가요?{" "}
-          <a
-            href="/signup"
-            className="text-blue-500 font-medium hover:underline"
+          <button
+            onClick={() => navigate("/signup")}
+            className="text-blue-500 font-black hover:underline ml-1"
           >
             회원가입
-          </a>
+          </button>
         </p>
       </div>
     </main>

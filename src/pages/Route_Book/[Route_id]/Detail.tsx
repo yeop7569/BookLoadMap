@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import supabase from "../../../lib/supabase";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import type { BookRoute } from "../../../types";
 
 export default function RouteDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [route, setRoute] = useState(null);
+  const [route, setRoute] = useState<BookRoute | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRouteDetail = async () => {
+  const fetchRouteDetail = useCallback(async () => {
+    if (!id) return;
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -21,20 +23,22 @@ export default function RouteDetail() {
 
       if (error) {
         toast.error("정보를 불러오지 못했습니다.");
-        console.error(error);
+        console.error(error.message);
       } else {
-        setRoute(data);
+        setRoute(data as BookRoute);
       }
     } catch (error) {
-      console.error(error);
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    if (id) fetchRouteDetail();
-  }, [id]);
+    fetchRouteDetail();
+  }, [fetchRouteDetail]);
 
   if (loading) {
     return (
@@ -55,11 +59,12 @@ export default function RouteDetail() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-32">
-      {/* Hero Section */}
       <div className="relative w-full h-[50vh] min-h-[400px] overflow-hidden mb-[-100px] z-0">
         <img 
           src={route.thumbnail || "https://placehold.co/1200x800?text=No+Image"} 
           className="w-full h-full object-cover opacity-40"
+          alt={route.Route_title}
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent"></div>
         <div className="absolute left-6 top-10">
@@ -72,13 +77,11 @@ export default function RouteDetail() {
         </div>
       </div>
 
-      {/* Content Wrapper */}
       <div className="relative z-10 max-w-4xl mx-auto px-6">
-        {/* Header Card */}
         <div className="bg-zinc-900/40 backdrop-blur-2xl border border-zinc-800/50 p-10 md:p-16 rounded-[48px] shadow-2xl mb-16">
           <div className="flex flex-wrap items-center gap-3 mb-6">
              <span className="badge badge-primary font-black px-4 py-3 rounded-full uppercase tracking-wider text-[10px] h-auto">
-               {route.category || "General"}
+                {route.category || "General"}
              </span>
              <span className="text-zinc-500 font-bold text-xs uppercase tracking-widest">
                 {dayjs(route.created_at).format("YYYY년 MM월 DD일 작성")}
@@ -97,12 +100,11 @@ export default function RouteDetail() {
             </div>
           </div>
 
-          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed font-medium">
+          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed font-medium whitespace-pre-wrap">
             {route.content || "이 로드맵에 대한 상세 가이드가 준비되지 않았습니다."}
           </p>
         </div>
 
-        {/* Roadmap List */}
         <div className="space-y-12">
           <h2 className="text-2xl font-black border-l-4 border-blue-500 pl-6 mb-12">로드맵 단계별 가이드</h2>
           
@@ -110,7 +112,6 @@ export default function RouteDetail() {
              {route.selected_books && route.selected_books.length > 0 ? (
                route.selected_books.map((book, index) => (
                  <div key={index} className="relative group">
-                    {/* Timeline Node */}
                     <div className="absolute left-[-40px] top-0 w-8 h-8 rounded-xl bg-zinc-900 border-2 border-zinc-800 flex items-center justify-center text-xs font-black text-zinc-500 group-hover:border-blue-500 group-hover:text-blue-500 transition-all shadow-xl">
                       {index + 1}
                     </div>
@@ -120,6 +121,7 @@ export default function RouteDetail() {
                         src={book.thumbnail || "https://placehold.co/120x180?text=No+Image"} 
                         alt={book.title}
                         className="w-32 h-48 object-cover rounded-2xl shadow-2xl flex-shrink-0"
+                        loading="lazy"
                       />
                       <div className="flex flex-col">
                         <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{book.title}</h3>

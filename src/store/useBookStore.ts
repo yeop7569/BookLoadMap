@@ -1,20 +1,42 @@
 import { create } from "zustand";
+import type { Book, User } from "../types";
 
-const useBookStore = create((set) => ({
+interface BookState {
+  user: User | null;
+  selectedBooks: Book[];
+  isModalOpen: boolean;
+  isDataLoaded: boolean;
+  routeTitle: string;
+  category: string;
+  content: string;
+  setRouteTitle: (title: string) => void;
+  setCategory: (category: string) => void;
+  setContent: (content: string) => void;
+  setIsDataLoaded: (val: boolean) => void;
+  setUser: (user: User | null) => void;
+  setBooksFromSupabase: (books: Book[]) => void;
+  addBook: (book: Book) => void;
+  removeBook: (bookToRemove: Book) => void;
+  updateBookNote: (bookKey: string, newNote: string) => void;
+  updateBookGenre: (bookKey: string, newGenre: string) => void;
+  openModal: () => void;
+  closeModal: () => void;
+  clearSelection: () => void;
+}
+
+const useBookStore = create<BookState>((set) => ({
   // --- 상태 (State) ---
   user: null,
   selectedBooks: [],
   isModalOpen: false,
-  isDataLoaded: false, // 👈 문지기 상태
+  isDataLoaded: false,
   routeTitle: "",
   category: "",
   content: "",
+
   setRouteTitle: (title) => set({ routeTitle: title }),
   setCategory: (category) => set({ category: category }),
   setContent: (content) => set({ content: content }),
-  // --- 액션 (Actions) ---
-
-  // 💡 [추가] 문지기 상태를 변경하는 함수
   setIsDataLoaded: (val) => set({ isDataLoaded: val }),
 
   setUser: (user) => {
@@ -24,7 +46,6 @@ const useBookStore = create((set) => ({
     }
   },
 
-  // 중복된 setBooksFromSupabase를 하나로 통합하고 안전하게 배열 처리
   setBooksFromSupabase: (books) =>
     set({
       selectedBooks: Array.isArray(books) ? books : [],

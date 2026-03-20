@@ -1,3 +1,4 @@
+import React from "react";
 import MainPage from "./pages/MainPage";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -26,10 +27,10 @@ function App() {
           element={<RouteDetail />}
         />
         <Route path="/booksearch" element={<BookSearch />} />
-        <Route path="*" element={<div>없는페이지임</div>} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/SignIn" element={<SignIn />} />
         <Route path="/SignUp" element={<SignUp />} />
+        <Route path="*" element={<div className="min-h-screen bg-black flex items-center justify-center text-white text-2xl font-black">404 - 페이지를 찾을 수 없습니다</div>} />
       </Routes>
       <Footer />
     </Router>

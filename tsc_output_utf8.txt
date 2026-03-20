@@ -1,0 +1,21 @@
+﻿src/api/bookService.ts(2,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/BookCard.tsx(2,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/RouteDraft.tsx(9,10): error TS1484: 'BookRoute' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/SelectedBookModal.tsx(7,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/SelectedBookModal.tsx(7,16): error TS1484: 'User' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/lib/supabase.ts(3,41): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/lib/supabase.ts(4,41): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/main.tsx(3,8): error TS2307: Cannot find module './index.css' or its corresponding type declarations.
+src/pages/BookSearch.tsx(9,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/BookSearch.tsx(43,51): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/pages/MainPage.tsx(4,8): error TS2307: Cannot find module 'swiper/css' or its corresponding type declarations.
+src/pages/MainPage.tsx(5,8): error TS2307: Cannot find module 'swiper/css/autoplay' or its corresponding type declarations.
+src/pages/MainPage.tsx(6,8): error TS2307: Cannot find module 'swiper/css/pagination' or its corresponding type declarations.
+src/pages/MainPage.tsx(10,10): error TS1484: 'BookRoute' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/MyPage.tsx(7,10): error TS1484: 'BookRoute' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Route_Book/[Route_id]/create.tsx(12,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Route_Book/[Route_id]/create.tsx(278,14): error TS2322: Type '{ children: string; jsx: true; }' is not assignable to type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+  Property 'jsx' does not exist on type 'DetailedHTMLProps<StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>'.
+src/pages/Route_Book/[Route_id]/Detail.tsx(6,10): error TS1484: 'BookRoute' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/store/useBookStore.ts(2,10): error TS1484: 'Book' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/store/useBookStore.ts(2,16): error TS1484: 'User' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
