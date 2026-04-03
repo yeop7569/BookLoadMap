@@ -2,7 +2,7 @@
 
 당신만의 독서 경로를 설계하고 공유하는 스마트한 도서 로드맵 서비스입니다.
 
-![BookLoadMap Screenshot](https://via.placeholder.com/800x450?text=BookLoadMap+Preview)
+![BookLoadMap Link](https://book-load-map.vercel.app/)
 
 ## 🌟 주요 기능
 
