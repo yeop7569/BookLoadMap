@@ -1,7 +1,7 @@
 import supabase from "../lib/supabase";
 import type { Book, BookRoute } from "../types";
 
-const KAKAO_API_KEY = "6e083fc4445086456e1165ef9b58ef6a"; // TODO: Use environment variable
+const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
 /**
  * 카카오 도서 검색 API

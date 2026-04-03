@@ -94,7 +94,7 @@ export default function BookSearch() {
         >
           <img
             src={thumb(b.thumbnail)}
-            alt={b.title}
+            alt={`${b.title} 도서 표지`}
             className="w-24 h-36 object-cover rounded-xl shadow-lg border border-zinc-800"
             loading="lazy"
           />
@@ -142,6 +142,7 @@ export default function BookSearch() {
             <FaSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500" />
             <button
               onClick={searchBooks}
+              aria-label="도서 검색"
               className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-primary btn-sm rounded-xl px-6 h-10 min-h-[auto] text-black font-black"
             >
               검색
@@ -161,6 +162,7 @@ export default function BookSearch() {
             <div className="flex bg-black/40 p-1.5 rounded-2xl border border-zinc-800">
               <button
                 onClick={() => setIsGridView(true)}
+                aria-label="그리드 뷰 보기"
                 className={`p-3 rounded-xl transition-all ${
                   isGridView ? "bg-zinc-800 text-blue-400 shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                 }`}
@@ -169,6 +171,7 @@ export default function BookSearch() {
               </button>
               <button
                 onClick={() => setIsGridView(false)}
+                aria-label="리스트 뷰 보기"
                 className={`p-3 rounded-xl transition-all ${
                   !isGridView ? "bg-zinc-800 text-blue-400 shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                 }`}

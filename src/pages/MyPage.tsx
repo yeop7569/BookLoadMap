@@ -147,7 +147,7 @@ export default function MyPage() {
                 <div className="aspect-video relative overflow-hidden">
                   <img 
                     src={route.thumbnail || "https://placehold.co/600x400?text=No+Image"} 
-                    alt={route.Route_title}
+                    alt={`${route.Route_title || "로드맵"} 썸네일 이미지`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
@@ -179,6 +179,7 @@ export default function MyPage() {
                       </button>
                       <button 
                         onClick={(e) => handleDelete(route.id || "", e)}
+                        aria-label="로드맵 삭제"
                         className="btn btn-ghost btn-sm h-9 px-4 rounded-xl text-zinc-700 hover:text-red-500 hover:bg-red-500/10 transition-colors text-xs font-bold"
                       >
                         삭제
